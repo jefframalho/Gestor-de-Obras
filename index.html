@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gestor de Obras</title>
+<meta name="description" content="Gestor de Obras — sistema de gestão para construtoras: obras, cronograma, diário de obra, financeiro, materiais, equipe e clientes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --bg:#f4f5f7;--card:#ffffff;--ink:#16191f;--mut:#6b7280;--line:#e5e7eb;--soft:#f9fafb;
+  --pri:#f08a24;--pri2:#d9741a;--priSoft:#fff3e6;
+  --side:#14181f;--sideInk:#c9ced6;--sideAct:#232a35;
+  --ok:#16a34a;--okSoft:#e8f7ee;--warn:#d97706;--warnSoft:#fef6e4;--bad:#dc2626;--badSoft:#fdecec;--info:#2563eb;--infoSoft:#eaf1fe;
+  --r:12px;--sh:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1116;--card:#171b22;--ink:#e8eaee;--mut:#9aa3af;--line:#262c36;--soft:#1c212a;--priSoft:#33230f;
+  --side:#0a0d11;--sideAct:#1b212b;--okSoft:#12301f;--warnSoft:#33270e;--badSoft:#3a1616;--infoSoft:#142443;--sh:none}}
+:root[data-theme="dark"]{--bg:#0e1116;--card:#171b22;--ink:#e8eaee;--mut:#9aa3af;--line:#262c36;--soft:#1c212a;--priSoft:#33230f;--side:#0a0d11;--sideAct:#1b212b;--okSoft:#12301f;--warnSoft:#33270e;--badSoft:#3a1616;--infoSoft:#142443;--sh:none}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--pri2)}
+.hide{display:none!important}
+/* layout */
+.app{display:flex;min-height:100vh}
+.side{width:236px;background:var(--side);color:var(--sideInk);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex-shrink:0}
+.brand{display:flex;align-items:center;gap:10px;padding:20px 18px;color:#fff;font-weight:800;font-size:16px}
+.logo{width:34px;height:34px;border-radius:9px;background:var(--pri);display:grid;place-items:center;flex-shrink:0}
+.logo svg{width:20px;height:20px;stroke:#fff}
+.brand small{display:block;font-weight:500;font-size:11px;color:#8a93a0;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav{flex:1;padding:6px 10px;display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:11px;width:100%;border:0;background:none;color:var(--sideInk);padding:10px 12px;border-radius:9px;cursor:pointer;text-align:left;font-weight:500}
+.nav button:hover{background:var(--sideAct);color:#fff}
+.nav button.on{background:var(--sideAct);color:#fff;box-shadow:inset 3px 0 0 var(--pri)}
+.nav svg{width:18px;height:18px;flex-shrink:0}
+.sidefoot{padding:14px 16px;border-top:1px solid #222935;font-size:12px}
+.sidefoot b{color:#fff;display:block;font-size:13px}
+.sidefoot button{margin-top:8px;background:none;border:1px solid #2c3442;color:var(--sideInk);border-radius:8px;padding:6px 10px;cursor:pointer;width:100%}
+.main{flex:1;min-width:0;padding:26px 30px 60px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.top h1{margin:0;font-size:22px;letter-spacing:-.02em}
+.top p{margin:2px 0 0;color:var(--mut)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* componentes */
+.btn{border:1px solid var(--line);background:var(--card);padding:8px 14px;border-radius:9px;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--mut)}
+a.btn{text-decoration:none;color:var(--ink)}
+.banner a.btn{background:var(--card)}
+.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+.btn.pri:hover{background:var(--pri2)}
+.btn.danger{color:var(--bad);border-color:var(--bad);background:transparent}
+.btn.sm{padding:4px 10px;font-size:12px;border-radius:7px}
+.btn.ok{color:var(--ok);border-color:var(--ok);background:transparent}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:18px}
+.card h3{margin:0 0 12px;font-size:15px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--sh)}
+.kpi span{color:var(--mut);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.kpi b{display:block;font-size:22px;margin-top:6px;letter-spacing:-.02em}
+.kpi small{color:var(--mut)}
+.kpi.alert b{color:var(--bad)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--soft);text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);padding:10px 12px;font-weight:700;white-space:nowrap}
+td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:middle}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--soft)}
+.r{text-align:right}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11.5px;font-weight:700;white-space:nowrap}
+.b-ok{background:var(--okSoft);color:var(--ok)}.b-warn{background:var(--warnSoft);color:var(--warn)}.b-bad{background:var(--badSoft);color:var(--bad)}.b-info{background:var(--infoSoft);color:var(--info)}.b-mut{background:var(--soft);color:var(--mut);border:1px solid var(--line)}.b-pri{background:var(--priSoft);color:var(--pri2)}
+.bar{height:8px;background:var(--soft);border:1px solid var(--line);border-radius:99px;overflow:hidden;min-width:70px}
+.bar i{display:block;height:100%;background:var(--pri);border-radius:99px}
+.bar.g i{background:var(--ok)}
+.pct{display:flex;align-items:center;gap:8px}.pct .bar{flex:1}.pct b{font-size:12px;min-width:36px;text-align:right}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 16px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:10px 14px;cursor:pointer;color:var(--mut);font-weight:600;border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--ink);border-color:var(--pri)}
+.vazio{padding:30px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:10px;background:var(--card)}
+.list .it{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.list .it:first-child{border-top:0}
+.list .it small{color:var(--mut);display:block}
+.obra{cursor:pointer;transition:transform .12s}
+.obra:hover{transform:translateY(-2px)}
+.obra h4{margin:0;font-size:15.5px}
+.obra .meta{color:var(--mut);font-size:12.5px;margin:3px 0 12px}
+.obra .nums{display:flex;justify-content:space-between;margin-top:12px;font-size:12.5px;color:var(--mut)}
+.obra .nums b{display:block;color:var(--ink);font-size:14px}
+.sel{padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card)}
+.banner{padding:10px 14px;border-radius:10px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.banner.warn{background:var(--warnSoft);color:var(--warn)}.banner.info{background:var(--infoSoft);color:var(--info)}
+/* diário */
+.diario{display:grid;gap:12px}
+.dia{display:flex;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;cursor:pointer}
+.dia img{width:120px;height:90px;object-fit:cover;border-radius:8px;flex-shrink:0}
+.dia h5{margin:0 0 4px;font-size:13.5px}
+.dia p{margin:0;color:var(--mut);white-space:pre-wrap}
+/* gantt */
+.gantt{margin-bottom:16px}
+.grow{display:flex;align-items:center;gap:10px;margin:6px 0}
+.gname{width:150px;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+.gtrack{flex:1;position:relative;height:20px;background:var(--soft);border-radius:6px}
+.gbar{position:absolute;top:3px;bottom:3px;background:var(--priSoft);border:1px solid var(--pri);border-radius:5px;overflow:hidden}
+.gfill{height:100%;background:var(--pri)}
+.gtoday{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--bad)}
+.gfoot{display:flex;justify-content:space-between;color:var(--mut);font-size:11.5px;padding-left:160px}
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(10,12,16,.55);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:50;overflow-y:auto}
+.modal{background:var(--card);border-radius:14px;width:100%;max-width:560px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal h3{margin:0 0 16px;font-size:17px}
+.fld{margin-bottom:12px}
+.fld label{display:block;font-size:12.5px;font-weight:600;color:var(--mut);margin-bottom:4px}
+.fld input:not([type=checkbox]),.fld select,.fld textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
+.fld textarea{min-height:90px;resize:vertical}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:2px solid var(--pri);border-color:transparent}
+.chk{display:flex;gap:8px;align-items:center;font-weight:500;cursor:pointer}
+.prev{display:block;max-width:160px;border-radius:8px;margin-top:8px}
+.mact{display:flex;gap:8px;margin-top:18px;align-items:center}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.checks{max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:9px;padding:6px 10px}
+.checks label{display:flex;gap:8px;padding:6px 0;align-items:center;border-top:1px solid var(--line)}
+.checks label:first-child{border-top:0}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-weight:600;z-index:99;box-shadow:var(--sh)}
+/* auth */
+.auth{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr}
+.authL{background:var(--side);color:#fff;padding:56px;display:flex;flex-direction:column;justify-content:center;background-image:radial-gradient(circle at 80% 20%,rgba(240,138,36,.25),transparent 50%)}
+.authL h1{font-size:38px;line-height:1.1;letter-spacing:-.03em;margin:22px 0 14px}
+.authL p{color:#aab2bd;font-size:15.5px;max-width:440px}
+.authL ul{list-style:none;padding:0;margin:24px 0 0;display:grid;gap:10px;color:#d6dbe2}
+.authL li::before{content:"✓";color:var(--pri);font-weight:800;margin-right:10px}
+.authR{display:flex;align-items:center;justify-content:center;padding:30px 20px}
+.authBox{width:100%;max-width:380px}
+.authBox h2{margin:0 0 4px}
+.authBox .tabs{margin-bottom:20px}
+.authBox .btn{width:100%;justify-content:center;padding:11px}
+.demo{margin-top:18px;padding:12px;border-radius:10px;background:var(--infoSoft);color:var(--info);font-size:12.5px}
+/* portal */
+.portal{max-width:760px;margin:0 auto;padding:30px 16px 60px}
+.phead{background:var(--side);color:#fff;border-radius:16px;padding:26px;margin-bottom:18px}
+.phead h1{margin:6px 0 4px;font-size:24px}
+.phead p{margin:0;color:#aab2bd}
+.big{font-size:44px;font-weight:800;letter-spacing:-.03em}
+@media (max-width:860px){
+  .app{flex-direction:column}
+  .side{width:100%;height:auto;position:sticky;top:0;z-index:20}
+  .brand{padding:12px 16px}
+  .nav{flex-direction:row;overflow-x:auto;padding:0 8px 8px}
+  .nav button{width:auto;white-space:nowrap;padding:8px 10px}
+  .nav button.on{box-shadow:inset 0 -3px 0 var(--pri)}
+  .sidefoot{display:none}
+  .main{padding:18px 16px 60px}
+  .grid2,.f2{grid-template-columns:1fr}
+  .auth{grid-template-columns:1fr}.authL{padding:32px 22px}.authL h1{font-size:28px}.authL ul{display:none}
+  .gname{width:90px}.gfoot{padding-left:100px}
+  .dia img{width:84px;height:70px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+/* ===================== CONFIGURAÇÃO ===================== */
+// Cole aqui a configuração do seu projeto Firebase (Console > Configurações do projeto > Seus apps > Web).
+// Enquanto ficar vazio, o sistema roda em MODO DEMONSTRAÇÃO (dados salvos só neste navegador).
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBGB52L79VWRAXh7apOR_MCyzngPLs-RRY",
+  authDomain: "gestor-de-obras-9de52.firebaseapp.com",
+  projectId: "gestor-de-obras-9de52",
+  storageBucket: "gestor-de-obras-9de52.firebasestorage.app",
+  messagingSenderId: "981404460626",
+  appId: "1:981404460626:web:2bb728c5919c6c1dbd618b"
+};
+const ADMIN_EMAILS = ["jeffersonramalhopb@gmail.com"]; // quem vê o painel de assinantes
+const PRECO_MENSAL = 149.90;          // valor da mensalidade
+const DIAS_TESTE = 7;                 // teste grátis
+const WHATS_SUPORTE = "5583921418988"; // WhatsApp para pagamento/suporte
+/* ======================================================== */
+
+const USE_FB = !!FIREBASE_CONFIG.apiKey;
+let auth = null, fs = null;
+if (USE_FB) { firebase.initializeApp(FIREBASE_CONFIG); auth = firebase.auth(); fs = firebase.firestore(); }
+
+/* ---------- utilidades ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl = v => (Number(v) || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+const num = v => (Number(v) || 0).toLocaleString('pt-BR', {maximumFractionDigits:2});
+const gid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+const iso = ms => { const d = new Date(ms); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+const hoje = () => iso(Date.now());
+const addDias = (s, n) => { const d = new Date(s + 'T12:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+const addMes = (s, n) => { const d = new Date(s + 'T12:00'); const dia = d.getDate(); d.setDate(1); d.setMonth(d.getMonth() + n); const ult = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); d.setDate(Math.min(dia, ult)); return d.toISOString().slice(0, 10); };
+const fdata = s => s ? s.split('-').reverse().join('/') : '—';
+const diasAte = s => Math.round((new Date(s + 'T12:00') - new Date(hoje() + 'T12:00')) / 864e5);
+const soDig = s => String(s || '').replace(/\D/g, '');
+const wa = (tel, txt) => { let t = soDig(tel); if (t && t.length <= 11) t = '55' + t; return `https://wa.me/${t}?text=${encodeURIComponent(txt || '')}`; };
+function toast(m) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
+const IC = {
+  dash:'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+  obra:'<path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/>',
+  fin:'<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  mat:'<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',
+  eq:'<circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8M22 21v-2a4 4 0 0 0-3-3.9"/>',
+  cli:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>',
+  cfg:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  adm:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  logo:'<path d="M2 20h20M4 20V10l8-6 8 6v10"/><path d="M10 20v-5h4v5"/>'
+};
+const ico = k => `<svg viewBox="0 0 24 24">${IC[k]}</svg>`;
+
+/* ---------- camada de dados (Firebase ou demonstração) ---------- */
+const Demo = {
+  get() { try { return JSON.parse(localStorage.getItem('gdo_demo')) || this.novo(); } catch (e) { return this.novo(); } },
+  novo() { return {users:{}, perfis:{}, empresas:{}, dados:{}, portais:{}}; },
+  set(d) { try { localStorage.setItem('gdo_demo', JSON.stringify(d)); } catch (e) { alert('O armazenamento do navegador encheu (fotos ocupam espaço). No modo demonstração o limite é pequeno; com o Firebase configurado não há esse problema.'); throw e; } }
+};
+const toTs = ms => firebase.firestore.Timestamp.fromMillis(ms);
+const fixEmp = e => { if (e && e.venceTs && e.venceTs.toMillis) e.venceTs = e.venceTs.toMillis(); return e; };
+
+const API = {
+  async login(email, senha) {
+    email = email.trim().toLowerCase();
+    if (USE_FB) return (await auth.signInWithEmailAndPassword(email, senha)).user.uid;
+    const d = Demo.get(), u = d.users[email];
+    if (!u || u.senha !== senha) throw new Error('E-mail ou senha incorretos.');
+    localStorage.setItem('gdo_sess', JSON.stringify({uid:u.uid, email})); return u.uid;
+  },
+  async criarConta(email, senha) {
+    email = email.trim().toLowerCase();
+    if (USE_FB) return (await auth.createUserWithEmailAndPassword(email, senha)).user.uid;
+    const uid = this._demoUser(email, senha);
+    localStorage.setItem('gdo_sess', JSON.stringify({uid, email})); return uid;
+  },
+  _demoUser(email, senha) {
+    const d = Demo.get();
+    if (d.users[email]) throw new Error('Este e-mail já está cadastrado.');
+    if (String(senha).length < 6) throw new Error('A senha precisa ter pelo menos 6 caracteres.');
+    const uid = gid(); d.users[email] = {uid, senha}; Demo.set(d); return uid;
+  },
+  async criarUsuarioSecundario(email, senha) {
+    email = email.trim().toLowerCase();
+    if (USE_FB) {
+      const app2 = firebase.apps.find(a => a.name === 'sec') || firebase.initializeApp(FIREBASE_CONFIG, 'sec');
+      const c = await app2.auth().createUserWithEmailAndPassword(email, senha);
+      await app2.auth().signOut(); return c.user.uid;
+    }
+    return this._demoUser(email, senha);
+  },
+  async logout() { if (USE_FB) await auth.signOut(); localStorage.removeItem('gdo_sess'); },
+  async uidAtual() {
+    if (USE_FB) return new Promise(r => { const un = auth.onAuthStateChanged(u => { un(); r(u ? u.uid : null); }); });
+    const s = JSON.parse(localStorage.getItem('gdo_sess') || 'null'); return s ? s.uid : null;
+  },
+  emailAtual() { if (USE_FB) return auth.currentUser ? auth.currentUser.email : ''; const s = JSON.parse(localStorage.getItem('gdo_sess') || 'null'); return s ? s.email : ''; },
+  async resetSenha(email) { if (!USE_FB) throw new Error('Disponível quando o Firebase estiver configurado.'); await auth.sendPasswordResetEmail(email.trim()); },
+  async getPerfil(uid) { if (USE_FB) { const s = await fs.doc('usuarios/' + uid).get(); return s.exists ? s.data() : null; } return Demo.get().perfis[uid] || null; },
+  async setPerfil(uid, p) { if (USE_FB) return fs.doc('usuarios/' + uid).set(p, {merge:true}); const d = Demo.get(); d.perfis[uid] = {...(d.perfis[uid] || {}), ...p}; Demo.set(d); },
+  async delPerfil(uid) { if (USE_FB) return fs.doc('usuarios/' + uid).delete(); const d = Demo.get(); delete d.perfis[uid]; Demo.set(d); },
+  async usuariosDaEmpresa(eid) {
+    if (USE_FB) return (await fs.collection('usuarios').where('empresaId', '==', eid).get()).docs.map(x => ({uid:x.id, ...x.data()}));
+    const d = Demo.get(); return Object.entries(d.perfis).filter(([, p]) => p.empresaId === eid).map(([uid, p]) => ({uid, ...p}));
+  },
+  async getEmpresa(eid) { if (USE_FB) { const s = await fs.doc('empresas/' + eid).get(); return s.exists ? fixEmp({id:s.id, ...s.data()}) : null; } const e = Demo.get().empresas[eid]; return e ? {id:eid, ...e} : null; },
+  async setEmpresa(eid, e) {
+    const x = {...e}; delete x.id;
+    if (USE_FB) { if (typeof x.venceTs === 'number') x.venceTs = toTs(x.venceTs); return fs.doc('empresas/' + eid).set(x, {merge:true}); }
+    const d = Demo.get(); d.empresas[eid] = {...(d.empresas[eid] || {}), ...x}; Demo.set(d);
+  },
+  async listEmpresas() {
+    if (USE_FB) return (await fs.collection('empresas').get()).docs.map(x => fixEmp({id:x.id, ...x.data()}));
+    return Object.entries(Demo.get().empresas).map(([id, e]) => ({id, ...e}));
+  },
+  async list(eid, col) {
+    if (USE_FB) return (await fs.collection(`empresas/${eid}/${col}`).get()).docs.map(x => ({...x.data(), id:x.id}));
+    const d = Demo.get(); return Object.values((d.dados[eid] || {})[col] || {});
+  },
+  async put(eid, col, id, obj) {
+    if (USE_FB) return fs.doc(`empresas/${eid}/${col}/${id}`).set(obj);
+    const d = Demo.get(); d.dados[eid] = d.dados[eid] || {}; d.dados[eid][col] = d.dados[eid][col] || {}; d.dados[eid][col][id] = obj; Demo.set(d);
+  },
+  async del(eid, col, id) {
+    if (USE_FB) return fs.doc(`empresas/${eid}/${col}/${id}`).delete();
+    const d = Demo.get(); if (d.dados[eid] && d.dados[eid][col]) delete d.dados[eid][col][id]; Demo.set(d);
+  },
+  async getPortal(t) { if (USE_FB) { const s = await fs.doc('portais/' + t).get(); return s.exists ? s.data() : null; } return Demo.get().portais[t] || null; },
+  async setPortal(t, p) { if (USE_FB) return fs.doc('portais/' + t).set(p); const d = Demo.get(); d.portais[t] = p; Demo.set(d); }
+};
+
+/* ---------- estado ---------- */
+const COLS = ['obras','etapas','diario','lancamentos','fornecedores','materiais','movimentos','pedidos','funcionarios','apontamentos','clientes','contratos'];
+const S = {uid:null, email:'', perfil:null, eid:null, empresa:null, data:{}, page:'dashboard', obraId:null, tab:{}, filtro:{}};
+const PAPEIS = {admin:'Administrador', engenheiro:'Engenheiro / Mestre de obras', financeiro:'Financeiro'};
+const PERM = {
+  admin:['dashboard','obras','financeiro','materiais','equipe','clientes','config'],
+  engenheiro:['dashboard','obras','materiais','equipe'],
+  financeiro:['dashboard','obras','financeiro','materiais','clientes','config']
+};
+const isAdmin = () => ADMIN_EMAILS.map(x => x.toLowerCase()).includes((S.email || '').toLowerCase());
+const pode = p => S.perfil && (PERM[S.perfil.papel] || PERM.admin).includes(p);
+const bloqueada = e => !e || e.status === 'bloqueado' || (e.venceTs || 0) < Date.now();
+
+async function carregarTudo() { await Promise.all(COLS.map(async c => { S.data[c] = await API.list(S.eid, c); })); }
+async function salvar(col, obj) {
+  obj.id = obj.id || gid(); obj.atualizadoEm = Date.now(); if (!obj.criadoEm) obj.criadoEm = Date.now();
+  await API.put(S.eid, col, obj.id, obj);
+  const a = S.data[col], i = a.findIndex(x => x.id === obj.id); if (i >= 0) a[i] = obj; else a.push(obj);
+  return obj;
+}
+async function excluir(col, id) { await API.del(S.eid, col, id); S.data[col] = S.data[col].filter(x => x.id !== id); }
+const achar = (col, id) => (S.data[col] || []).find(x => x.id === id);
+const nomeDe = (col, id, vazio = '—') => { const o = achar(col, id); return o ? rotulo(col, o) : vazio; };
+function rotulo(col, o) {
+  if (col === 'materiais') return `${o.nome} (${o.unidade || 'un'})${o.obraId ? ' — ' + nomeDe('obras', o.obraId) : ' — Depósito'}`;
+  if (col === 'contratos') return `Contrato ${o.numero || ''} — ${nomeDe('clientes', o.clienteId)}`;
+  return o.nome || o.descricao || o.id;
+}
+
+/* ---------- cálculos ---------- */
+function progressoObra(oid) {
+  const et = S.data.etapas.filter(e => e.obraId === oid); if (!et.length) return 0;
+  const tot = et.reduce((s, e) => s + (+e.custoPrevisto || 0), 0);
+  if (tot > 0) return et.reduce((s, e) => s + (+e.custoPrevisto || 0) * (+e.percentual || 0), 0) / tot;
+  return et.reduce((s, e) => s + (+e.percentual || 0), 0) / et.length;
+}
+const lancObra = oid => S.data.lancamentos.filter(l => l.obraId === oid);
+const gastoObra = oid => lancObra(oid).filter(l => l.tipo === 'Pagar' && l.pago).reduce((s, l) => s + (+l.valor || 0), 0);
+const aPagarObra = oid => lancObra(oid).filter(l => l.tipo === 'Pagar' && !l.pago).reduce((s, l) => s + (+l.valor || 0), 0);
+const recebidoObra = oid => lancObra(oid).filter(l => l.tipo === 'Receber' && l.pago).reduce((s, l) => s + (+l.valor || 0), 0);
+function statusLanc(l) {
+  if (l.pago) return `<span class="badge b-ok">${l.tipo === 'Receber' ? 'Recebido' : 'Pago'}</span>`;
+  const d = diasAte(l.vencimento);
+  if (d < 0) return `<span class="badge b-bad">Vencido</span>`;
+  if (d <= 3) return `<span class="badge b-warn">Vence ${d === 0 ? 'hoje' : 'em ' + d + 'd'}</span>`;
+  return `<span class="badge b-mut">Em aberto</span>`;
+}
+const badgeObra = s => `<span class="badge ${({'Em andamento':'b-pri','Concluída':'b-ok','Pausada':'b-warn'})[s] || 'b-mut'}">${esc(s || 'Planejamento')}</span>`;
+const barra = (p, cls = '') => `<div class="pct"><div class="bar ${cls}"><i style="width:${Math.min(100, Math.max(0, p)).toFixed(0)}%"></i></div><b>${Math.round(p)}%</b></div>`;
+const diariasAbertas = fid => S.data.apontamentos.filter(a => a.funcionarioId === fid && !a.pago);
+
+/* ---------- formulários ---------- */
+const OPC = {
+  statusObra:['Planejamento','Em andamento','Pausada','Concluída'],
+  clima:['Ensolarado','Nublado','Chuvoso','Sem expediente'],
+  catLanc:['Material','Mão de obra','Equipamento / Locação','Serviço terceirizado','Taxas / Impostos','Medição / Parcela do cliente','Administrativo','Outros'],
+  unid:['un','saco','m','m²','m³','kg','barra','milheiro','lata','L','caminhão','rolo','peça'],
+  statusPed:['Aberto','Aprovado','Entregue','Cancelado']
+};
+const ref = (col, vazio) => ({type:'ref', col, vazio});
+const SCHEMA = {
+  obras:{titulo:'Obra', fields:[
+    {k:'nome', l:'Nome da obra', req:1}, {k:'clienteId', l:'Cliente', ...ref('clientes')}, {k:'endereco', l:'Endereço'},
+    {k:'inicio', l:'Início', type:'date', half:1}, {k:'previsao', l:'Previsão de entrega', type:'date', half:1},
+    {k:'orcamento', l:'Orçamento total (R$)', type:'money', half:1}, {k:'status', l:'Status', type:'select', opts:OPC.statusObra, half:1},
+    {k:'portal', l:'Liberar portal para o cliente acompanhar a obra', type:'check'}]},
+  etapas:{titulo:'Etapa do cronograma', fields:[
+    {k:'obraId', l:'Obra', ...ref('obras'), req:1}, {k:'nome', l:'Nome da etapa', req:1, ph:'Ex.: Fundação, Alvenaria, Reboco'},
+    {k:'inicio', l:'Início', type:'date', half:1}, {k:'fim', l:'Fim', type:'date', half:1},
+    {k:'custoPrevisto', l:'Custo previsto (R$)', type:'money', half:1}, {k:'percentual', l:'% concluído', type:'pct', half:1}]},
+  diario:{titulo:'Registro do diário de obra', fields:[
+    {k:'obraId', l:'Obra', ...ref('obras'), req:1}, {k:'data', l:'Data', type:'date', req:1, half:1}, {k:'clima', l:'Clima', type:'select', opts:OPC.clima, half:1},
+    {k:'equipe', l:'Pessoas na obra', type:'number', half:1}, {k:'texto', l:'O que foi feito / ocorrências', type:'textarea', req:1},
+    {k:'foto', l:'Foto', type:'image'}]},
+  lancamentos:{titulo:'Lançamento financeiro', fields:[
+    {k:'tipo', l:'Tipo', type:'select', opts:['Pagar','Receber'], half:1}, {k:'categoria', l:'Categoria', type:'select', opts:OPC.catLanc, half:1},
+    {k:'descricao', l:'Descrição', req:1}, {k:'obraId', l:'Obra', ...ref('obras', 'Sem obra (administrativo)')},
+    {k:'valor', l:'Valor (R$)', type:'money', req:1, half:1}, {k:'vencimento', l:'Vencimento', type:'date', req:1, half:1},
+    {k:'pago', l:'Já foi pago / recebido', type:'check'}]},
+  fornecedores:{titulo:'Fornecedor', fields:[
+    {k:'nome', l:'Nome', req:1}, {k:'cnpj', l:'CNPJ / CPF', half:1}, {k:'telefone', l:'WhatsApp', half:1},
+    {k:'email', l:'E-mail', half:1}, {k:'categoria', l:'O que fornece', half:1, ph:'Ex.: cimento, aço, elétrica'}]},
+  materiais:{titulo:'Material', fields:[
+    {k:'nome', l:'Material', req:1, ph:'Ex.: Cimento CP-II 50kg'}, {k:'unidade', l:'Unidade', type:'select', opts:OPC.unid, half:1},
+    {k:'obraId', l:'Onde está', ...ref('obras', 'Depósito central'), half:1},
+    {k:'quantidade', l:'Quantidade em estoque', type:'number', half:1}, {k:'minimo', l:'Estoque mínimo', type:'number', half:1},
+    {k:'custoUnit', l:'Custo unitário (R$)', type:'money'}]},
+  movimentos:{titulo:'Entrada / saída de material', fields:[
+    {k:'materialId', l:'Material', ...ref('materiais'), req:1}, {k:'tipo', l:'Tipo', type:'select', opts:['Entrada','Saída'], half:1},
+    {k:'quantidade', l:'Quantidade', type:'number', req:1, half:1}, {k:'data', l:'Data', type:'date', half:1},
+    {k:'obs', l:'Observação', half:1, ph:'Ex.: NF 1234, usado na laje'}]},
+  pedidos:{titulo:'Pedido de compra', fields:[
+    {k:'fornecedorId', l:'Fornecedor', ...ref('fornecedores'), req:1}, {k:'obraId', l:'Para a obra', ...ref('obras', 'Depósito central')},
+    {k:'data', l:'Data do pedido', type:'date', half:1}, {k:'previsaoEntrega', l:'Previsão de entrega', type:'date', half:1},
+    {k:'itens', l:'Itens do pedido', type:'textarea', req:1, ph:'50 sacos de cimento CP-II\n10 m³ de areia média'},
+    {k:'valor', l:'Valor total (R$)', type:'money', half:1}, {k:'status', l:'Status', type:'select', opts:OPC.statusPed, half:1}]},
+  funcionarios:{titulo:'Funcionário', fields:[
+    {k:'nome', l:'Nome', req:1}, {k:'funcao', l:'Função', half:1, ph:'Pedreiro, servente...'}, {k:'telefone', l:'WhatsApp', half:1},
+    {k:'cpf', l:'CPF', half:1}, {k:'diaria', l:'Valor da diária (R$)', type:'money', half:1},
+    {k:'obraId', l:'Obra atual', ...ref('obras', 'Sem obra')}, {k:'ativo', l:'Ativo', type:'check'}]},
+  apontamentos:{titulo:'Diária', fields:[
+    {k:'funcionarioId', l:'Funcionário', ...ref('funcionarios'), req:1}, {k:'obraId', l:'Obra', ...ref('obras'), req:1},
+    {k:'data', l:'Data', type:'date', req:1, half:1}, {k:'dias', l:'Período', type:'select', opts:['1','0.5'], labels:['Dia inteiro','Meio período'], half:1}]},
+  clientes:{titulo:'Cliente', fields:[
+    {k:'nome', l:'Nome', req:1}, {k:'cpfCnpj', l:'CPF / CNPJ', half:1}, {k:'telefone', l:'WhatsApp', half:1},
+    {k:'email', l:'E-mail'}, {k:'endereco', l:'Endereço'}]},
+  contratos:{titulo:'Contrato', fields:[
+    {k:'clienteId', l:'Cliente', ...ref('clientes'), req:1}, {k:'obraId', l:'Obra', ...ref('obras')},
+    {k:'numero', l:'Nº do contrato', half:1}, {k:'assinadoEm', l:'Assinado em', type:'date', half:1},
+    {k:'valor', l:'Valor total (R$)', type:'money', req:1, half:1}, {k:'parcelas', l:'Nº de parcelas', type:'number', half:1},
+    {k:'primeiroVenc', l:'1º vencimento', type:'date', half:1}, {k:'obs', l:'Observações / escopo', type:'textarea'}]}
+};
+
+function campo(f, v) {
+  const id = 'f_' + f.k, t = f.type || 'text', ph = f.ph ? ` placeholder="${esc(f.ph)}"` : '';
+  if (t === 'select') return `<select id="${id}">${f.opts.map((o, i) => `<option value="${esc(o)}" ${o == v ? 'selected' : ''}>${esc(f.labels ? f.labels[i] : o)}</option>`).join('')}</select>`;
+  if (t === 'ref') return `<select id="${id}"><option value="">— ${esc(f.vazio || 'Selecione')} —</option>${(S.data[f.col] || []).slice().sort((a, b) => rotulo(f.col, a).localeCompare(rotulo(f.col, b))).map(o => `<option value="${o.id}" ${o.id === v ? 'selected' : ''}>${esc(rotulo(f.col, o))}</option>`).join('')}</select>`;
+  if (t === 'textarea') return `<textarea id="${id}"${ph}>${esc(v)}</textarea>`;
+  if (t === 'check') return `<label class="chk"><input type="checkbox" id="${id}" ${v ? 'checked' : ''}> ${esc(f.l)}</label>`;
+  if (t === 'image') return `<input type="file" accept="image/*" id="${id}">${v ? `<img src="${v}" class="prev">` : ''}`;
+  const it = {money:'number" step="0.01" min="0', number:'number" step="any', pct:'number" min="0" max="100', date:'date'}[t] || 'text';
+  return `<input id="${id}" type="${it}" value="${esc(v ?? '')}"${ph}>`;
+}
+function modal(html) { fecharModal(); const o = document.createElement('div'); o.className = 'ov'; o.id = 'ov'; o.innerHTML = `<div class="modal">${html}</div>`; o.addEventListener('mousedown', e => { if (e.target === o) fecharModal(); }); document.body.appendChild(o); const f = o.querySelector('input:not([type=checkbox]),select,textarea'); if (f && innerWidth > 860) f.focus(); }
+function fecharModal() { const o = $('#ov'); if (o) o.remove(); }
+
+function abrirForm(col, rec = {}) {
+  const sc = SCHEMA[col], novo = !rec.id;
+  const fl = sc.fields.map(f => `<div class="fld" ${f.half ? '' : 'style="grid-column:1/-1"'}>${f.type === 'check' ? campo(f, rec[f.k]) : `<label>${esc(f.l)}${f.req ? ' *' : ''}</label>${campo(f, rec[f.k])}`}</div>`).join('');
+  modal(`<h3>${novo ? 'Novo' : 'Editar'}: ${esc(sc.titulo)}</h3><form id="frm"><div class="f2">${fl}</div>
+    <div class="mact">${!novo ? '<button type="button" class="btn danger" id="bdel">Excluir</button>' : ''}<span style="flex:1"></span>
+    <button type="button" class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri" id="bsalvar">Salvar</button></div></form>`);
+  $('#frm').onsubmit = async e => {
+    e.preventDefault();
+    const o = {...rec};
+    for (const f of sc.fields) {
+      const el = $('#f_' + f.k), t = f.type || 'text';
+      if (t === 'check') o[f.k] = el.checked;
+      else if (t === 'image') { if (el.files[0]) { const r = await comprimir(el.files[0]); o[f.k] = r.foto; o[f.k + 'Thumb'] = r.thumb; } }
+      else if (['money','number','pct'].includes(t)) o[f.k] = el.value === '' ? '' : Number(el.value);
+      else o[f.k] = el.value.trim();
+      if (f.req && (o[f.k] === '' || o[f.k] == null)) { toast('Preencha: ' + f.l); el.focus(); return; }
+    }
+    $('#bsalvar').disabled = true;
+    try {
+      if (HOOK[col] && HOOK[col].antes) { if (await HOOK[col].antes(o, rec) === false) { $('#bsalvar').disabled = false; return; } }
+      await salvar(col, o);
+      if (HOOK[col] && HOOK[col].depois) await HOOK[col].depois(o, rec);
+      fecharModal(); render(); toast('Salvo!');
+    } catch (err) { console.error(err); toast('Erro ao salvar: ' + err.message); $('#bsalvar').disabled = false; }
+  };
+  if (!novo) $('#bdel').onclick = async () => {
+    if (!confirm('Excluir este registro? Essa ação não pode ser desfeita.')) return;
+    try { if (HOOK[col] && HOOK[col].excluir) await HOOK[col].excluir(rec); await excluir(col, rec.id); fecharModal(); render(); toast('Excluído'); }
+    catch (err) { toast('Erro: ' + err.message); }
+  };
+}
+
+/* regras automáticas ao salvar */
+async function ajustaEstoque(mov, sinal) {
+  const m = achar('materiais', mov.materialId); if (!m) return;
+  const d = (mov.tipo === 'Entrada' ? 1 : -1) * (+mov.quantidade || 0) * sinal;
+  await salvar('materiais', {...m, quantidade:+((+m.quantidade || 0) + d).toFixed(3)});
+}
+const HOOK = {
+  obras:{
+    antes:o => { if (o.portal && !o.portalToken) o.portalToken = gid() + gid(); },
+    depois:o => syncPortal(o.id),
+    excluir:async o => {
+      const lig = ['etapas','diario'].reduce((s, c) => s + S.data[c].filter(x => x.obraId === o.id).length, 0);
+      if (lig && !confirm(`Esta obra tem ${lig} etapa(s)/registro(s) de diário que também serão apagados. Continuar?`)) throw new Error('cancelado');
+      for (const c of ['etapas','diario']) for (const x of S.data[c].filter(x => x.obraId === o.id)) await excluir(c, x.id);
+      if (o.portalToken) await API.setPortal(o.portalToken, {empresaId:S.eid, ativo:false});
+    }
+  },
+  etapas:{depois:o => syncPortal(o.obraId), excluir:o => setTimeout(() => syncPortal(o.obraId), 50)},
+  diario:{depois:o => syncPortal(o.obraId), excluir:o => setTimeout(() => syncPortal(o.obraId), 50)},
+  lancamentos:{antes:(o, old) => { if (o.pago && !old.pago) o.dataPagamento = hoje(); if (!o.pago) o.dataPagamento = ''; }},
+  funcionarios:{antes:(o, old) => { if (!old.id && o.ativo === false && !('ativo' in old)) o.ativo = true; }},
+  movimentos:{
+    antes:async (o, old) => {
+      const m = achar('materiais', o.materialId);
+      let atual = +m.quantidade || 0;
+      if (old.id && old.materialId === o.materialId) atual -= (old.tipo === 'Entrada' ? 1 : -1) * (+old.quantidade || 0);
+      if (o.tipo === 'Saída' && atual - (+o.quantidade || 0) < 0) { toast(`Estoque insuficiente: há ${num(atual)} ${m.unidade || ''}`); return false; }
+      if (!o.data) o.data = hoje();
+      if (old.id) await ajustaEstoque(old, -1);
+    },
+    depois:o => ajustaEstoque(o, 1),
+    excluir:o => ajustaEstoque(o, -1)
+  }
+};
+
+/* fotos: reduz o tamanho antes de salvar */
+function comprimir(file) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      const mk = (max, q) => { const s = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement('canvas'); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); };
+      res({foto:mk(1000, .6), thumb:mk(360, .55)}); URL.revokeObjectURL(img.src);
+    };
+    img.onerror = rej; img.src = URL.createObjectURL(file);
+  });
+}
+
+/* portal do cliente: cópia pública e resumida da obra */
+async function syncPortal(oid) {
+  const o = achar('obras', oid); if (!o || !o.portalToken) return;
+  if (!o.portal) return API.setPortal(o.portalToken, {empresaId:S.eid, ativo:false});
+  const et = S.data.etapas.filter(e => e.obraId === oid).sort((a, b) => (a.inicio || '').localeCompare(b.inicio || '')).map(e => ({nome:e.nome, inicio:e.inicio || '', fim:e.fim || '', percentual:+e.percentual || 0}));
+  const di = S.data.diario.filter(d => d.obraId === oid).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 15).map(d => ({data:d.data, texto:d.texto, clima:d.clima || '', thumb:d.fotoThumb || ''}));
+  await API.setPortal(o.portalToken, {empresaId:S.eid, ativo:true, empresaNome:S.empresa.nome || '', empresaTel:S.empresa.telefone || '', obraNome:o.nome, endereco:o.endereco || '', status:o.status || '', inicio:o.inicio || '', previsao:o.previsao || '', progresso:Math.round(progressoObra(oid)), etapas:et, diario:di, atualizadoEm:Date.now()});
+}
+const linkPortal = o => location.origin + location.pathname + '?portal=' + o.portalToken;
+
+/* ---------- tabela genérica ---------- */
+function tabela(col, rows, cols, vazio) {
+  if (!rows.length) return `<div class="vazio">${vazio || 'Nada cadastrado ainda.'}</div>`;
+  return `<div class="tw"><table><thead><tr>${cols.map(c => `<th class="${c.r ? 'r' : ''}">${c.h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr data-col="${col}" data-id="${r.id}">${cols.map(c => `<td class="${c.r ? 'r' : ''}">${c.f ? c.f(r) : esc(r[c.k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+const tabs = (chave, itens) => { const at = S.tab[chave] || itens[0][0]; return `<div class="tabs">${itens.map(([k, l]) => `<button class="${k === at ? 'on' : ''}" data-act="tab" data-a="${chave}" data-b="${k}">${l}</button>`).join('')}</div>`; };
+const tabAt = (chave, def) => S.tab[chave] || def;
+
+/* ===================== TELAS ===================== */
+const PAGES = [
+  ['dashboard','Painel','dash'], ['obras','Obras','obra'], ['financeiro','Financeiro','fin'], ['materiais','Materiais','mat'],
+  ['equipe','Equipe','eq'], ['clientes','Clientes','cli'], ['config','Configurações','cfg']
+];
+function montarApp() {
+  const navs = PAGES.filter(p => pode(p[0])).map(p => `<button data-act="nav" data-a="${p[0]}">${ico(p[2])}<span>${p[1]}</span></button>`).join('')
+    + (isAdmin() ? `<button data-act="nav" data-a="admin">${ico('adm')}<span>Assinantes</span></button>` : '');
+  $('#root').innerHTML = `<div class="app"><aside class="side"><div class="brand"><div class="logo">${ico('logo')}</div><div>Gestor de Obras<small>${esc(S.empresa ? S.empresa.nome : 'Administração')}</small></div></div>
+    <nav class="nav">${navs}</nav><div class="sidefoot"><b>${esc(S.perfil ? S.perfil.nome : S.email)}</b>${esc(S.perfil ? PAPEIS[S.perfil.papel] : 'Administrador do sistema')}<button data-act="sair">Sair</button></div></aside>
+    <main class="main" id="main"></main></div>`;
+  render();
+}
+function render() {
+  document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.a === S.page));
+  const fn = {dashboard:pgDash, obras:pgObras, obra:pgObra, financeiro:pgFin, materiais:pgMat, equipe:pgEquipe, clientes:pgCli, config:pgCfg, admin:pgAdmin}[S.page] || pgDash;
+  const m = $('#main'); if (!m) return;
+  const r = fn(); if (r && r.then) r.then(h => { m.innerHTML = aviso() + h; }); else m.innerHTML = aviso() + r;
+}
+function aviso() {
+  const e = S.empresa; if (!e || S.page === 'admin') return '';
+  const d = Math.ceil(((e.venceTs || 0) - Date.now()) / 864e5);
+  const pagar = `<a class="btn sm" target="_blank" href="${wa(WHATS_SUPORTE, `Olá! Quero ${e.status === 'teste' ? 'assinar' : 'renovar'} o Gestor de Obras para a ${e.nome}.`)}">${e.status === 'teste' ? 'Assinar agora' : 'Renovar'}</a>`;
+  if (e.status === 'teste') return `<div class="banner info"><span><b>Teste grátis:</b> ${d} dia(s) restante(s). Assine por ${brl(PRECO_MENSAL)}/mês para continuar usando.</span>${pagar}</div>`;
+  if (d <= 5) return `<div class="banner warn"><span>Sua assinatura vence em <b>${d} dia(s)</b> (${fdata(iso(e.venceTs))}).</span>${pagar}</div>`;
+  return '';
+}
+const topo = (t, sub, acoes = '') => `<div class="top"><div><h1>${t}</h1>${sub ? `<p>${sub}</p>` : ''}</div><div class="row">${acoes}</div></div>`;
+
+/* ---------- painel ---------- */
+function pgDash() {
+  const D = S.data, h = hoje();
+  if (!D.obras.length && !D.clientes.length) return topo('Bem-vindo ao Gestor de Obras', esc(S.empresa.nome)) + `<div class="card" style="text-align:center;padding:40px"><h3 style="font-size:18px">Vamos começar?</h3><p style="color:var(--mut);max-width:460px;margin:0 auto 18px">Cadastre sua primeira obra, ou carregue dados de exemplo para conhecer o sistema (dá para apagar depois).</p><div class="row" style="justify-content:center"><button class="btn pri" data-act="novo" data-a="obras">+ Cadastrar obra</button>${S.perfil.papel === 'admin' ? '<button class="btn" data-act="exemplo">Carregar dados de exemplo</button>' : ''}</div></div>`;
+  const andamento = D.obras.filter(o => o.status === 'Em andamento');
+  const avanco = andamento.length ? andamento.reduce((s, o) => s + progressoObra(o.id), 0) / andamento.length : 0;
+  const ab = D.lancamentos.filter(l => !l.pago);
+  const rec30 = ab.filter(l => l.tipo === 'Receber' && diasAte(l.vencimento) <= 30).reduce((s, l) => s + +l.valor, 0);
+  const pag30 = ab.filter(l => l.tipo === 'Pagar' && diasAte(l.vencimento) <= 30).reduce((s, l) => s + +l.valor, 0);
+  const venc = ab.filter(l => l.vencimento < h);
+  const mes = h.slice(0, 7);
+  const saldoMes = D.lancamentos.filter(l => l.pago && (l.dataPagamento || l.vencimento || '').startsWith(mes)).reduce((s, l) => s + (l.tipo === 'Receber' ? 1 : -1) * +l.valor, 0);
+  const baixo = D.materiais.filter(m => m.minimo !== '' && m.minimo != null && +m.quantidade < +m.minimo);
+  const prox = ab.filter(l => diasAte(l.vencimento) <= 7).sort((a, b) => a.vencimento.localeCompare(b.vencimento)).slice(0, 8);
+  const fin = pode('financeiro');
+  return topo('Painel', `${esc(S.empresa.nome)} · ${new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'})}`, `<button class="btn pri" data-act="novo" data-a="diario">+ Diário de obra</button>`)
+  + `<div class="kpis"><div class="kpi"><span>Obras em andamento</span><b>${andamento.length}</b><small>${D.obras.length} no total</small></div>
+     <div class="kpi"><span>Avanço médio</span><b>${Math.round(avanco)}%</b><small>das obras em andamento</small></div>
+     ${fin ? `<div class="kpi"><span>A receber (30 dias)</span><b style="color:var(--ok)">${brl(rec30)}</b></div>
+     <div class="kpi"><span>A pagar (30 dias)</span><b>${brl(pag30)}</b></div>
+     <div class="kpi ${venc.length ? 'alert' : ''}"><span>Contas vencidas</span><b>${venc.length}</b><small>${brl(venc.reduce((s, l) => s + +l.valor, 0))}</small></div>
+     <div class="kpi"><span>Saldo do mês</span><b style="color:${saldoMes >= 0 ? 'var(--ok)' : 'var(--bad)'}">${brl(saldoMes)}</b><small>recebido − pago</small></div>` : ''}</div>
+  <div class="grid2"><div class="card"><h3>Obras em andamento</h3><div class="list">${andamento.length ? andamento.map(o => {
+      const g = gastoObra(o.id), orc = +o.orcamento || 0;
+      return `<div class="it" style="cursor:pointer" data-act="obra" data-a="${o.id}"><div style="flex:1;min-width:0"><b>${esc(o.nome)}</b><small>${fin && orc ? `Gasto ${brl(g)} de ${brl(orc)} (${Math.round(g / orc * 100)}%)` : esc(nomeDe('clientes', o.clienteId, ''))}${o.previsao ? ' · entrega ' + fdata(o.previsao) : ''}</small></div><div style="width:140px">${barra(progressoObra(o.id))}</div></div>`;
+    }).join('') : '<p style="color:var(--mut)">Nenhuma obra em andamento.</p>'}</div></div>
+    <div style="display:grid;gap:16px;align-content:start">
+    ${fin ? `<div class="card"><h3>Contas dos próximos 7 dias e vencidas</h3><div class="list">${prox.length ? prox.map(l => `<div class="it" style="cursor:pointer" data-act="edit" data-a="lancamentos" data-b="${l.id}"><div><b>${esc(l.descricao)}</b><small>${fdata(l.vencimento)} · ${l.tipo === 'Receber' ? 'a receber' : 'a pagar'}</small></div><div style="text-align:right"><b style="color:${l.tipo === 'Receber' ? 'var(--ok)' : 'inherit'}">${brl(l.valor)}</b><br>${statusLanc(l)}</div></div>`).join('') : '<p style="color:var(--mut)">Nada para os próximos dias. 👍</p>'}</div></div>` : ''}
+    <div class="card"><h3>Estoque abaixo do mínimo</h3><div class="list">${baixo.length ? baixo.map(m => `<div class="it" style="cursor:pointer" data-act="edit" data-a="materiais" data-b="${m.id}"><div><b>${esc(m.nome)}</b><small>${esc(m.obraId ? nomeDe('obras', m.obraId) : 'Depósito central')}</small></div><span class="badge b-bad">${num(m.quantidade)} / mín. ${num(m.minimo)} ${esc(m.unidade || '')}</span></div>`).join('') : '<p style="color:var(--mut)">Tudo em dia.</p>'}</div></div></div></div>`;
+}
+
+/* ---------- obras ---------- */
+function pgObras() {
+  const f = S.filtro.obras || 'ativas';
+  let obs = S.data.obras.slice().sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+  if (f === 'ativas') obs = obs.filter(o => o.status !== 'Concluída'); else if (f !== 'todas') obs = obs.filter(o => o.status === f);
+  const fin = pode('financeiro');
+  return topo('Obras', `${S.data.obras.length} obra(s) cadastrada(s)`, `<select class="sel" data-chg="filtro" data-a="obras"><option value="ativas">Não concluídas</option><option value="todas">Todas</option>${OPC.statusObra.map(s => `<option>${s}</option>`).join('')}</select><button class="btn pri" data-act="novo" data-a="obras">+ Nova obra</button>`).replace(`value="${f}"`, `value="${f}" selected`).replace(`<option>${f}</option>`, `<option selected>${f}</option>`)
+  + (obs.length ? `<div class="grid3">${obs.map(o => {
+      const p = progressoObra(o.id), g = gastoObra(o.id), orc = +o.orcamento || 0, d = o.previsao && o.status !== 'Concluída' ? diasAte(o.previsao) : null;
+      return `<div class="card obra" data-act="obra" data-a="${o.id}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><h4>${esc(o.nome)}</h4>${badgeObra(o.status)}</div>
+      <div class="meta">${esc(nomeDe('clientes', o.clienteId, 'Sem cliente'))}${o.endereco ? ' · ' + esc(o.endereco) : ''}</div>${barra(p)}
+      <div class="nums">${fin ? `<div>Orçamento<b>${brl(orc)}</b></div><div>Gasto<b style="color:${orc && g > orc ? 'var(--bad)' : 'inherit'}">${brl(g)}</b></div>` : ''}<div style="text-align:right">Entrega<b style="color:${d !== null && d < 0 ? 'var(--bad)' : 'inherit'}">${o.previsao ? fdata(o.previsao) : '—'}</b></div></div></div>`;
+    }).join('')}</div>` : '<div class="vazio">Nenhuma obra neste filtro.</div>');
+}
+function gantt(et) {
+  const ds = et.filter(e => e.inicio && e.fim); if (!ds.length) return '';
+  const t = s => +new Date(s + 'T12:00');
+  const min = Math.min(...ds.map(e => t(e.inicio))), max = Math.max(...ds.map(e => t(e.fim))), span = Math.max(max - min, 864e5);
+  const now = (t(hoje()) - min) / span * 100;
+  return `<div class="card gantt"><h3>Cronograma</h3>${ds.map(e => { const l = (t(e.inicio) - min) / span * 100, w = Math.max((t(e.fim) - t(e.inicio)) / span * 100, 1.5);
+    return `<div class="grow"><div class="gname" title="${esc(e.nome)}">${esc(e.nome)}</div><div class="gtrack"><div class="gbar" style="left:${l}%;width:${w}%"><div class="gfill" style="width:${+e.percentual || 0}%"></div></div>${now >= 0 && now <= 100 ? `<div class="gtoday" style="left:${now}%" title="Hoje"></div>` : ''}</div></div>`; }).join('')}
+    <div class="gfoot"><span>${fdata(ds.map(e => e.inicio).sort()[0])}</span><span style="color:var(--bad)">▍ hoje</span><span>${fdata(ds.map(e => e.fim).sort().pop())}</span></div></div>`;
+}
+function pgObra() {
+  const o = achar('obras', S.obraId); if (!o) { S.page = 'obras'; return pgObras(); }
+  const fin = pode('financeiro'), p = progressoObra(o.id), g = gastoObra(o.id), ap = aPagarObra(o.id), orc = +o.orcamento || 0, rec = recebidoObra(o.id);
+  const et = S.data.etapas.filter(e => e.obraId === o.id).sort((a, b) => (a.inicio || '9').localeCompare(b.inicio || '9'));
+  const abas = [['etapas','Etapas e cronograma'], ['diario','Diário de obra'], ...(fin ? [['fin','Financeiro']] : []), ['mat','Materiais'], ['eq','Equipe']];
+  const at = tabAt('obra', 'etapas');
+  let corpo = '';
+  if (at === 'etapas') corpo = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="etapas" data-b="${o.id}">+ Etapa</button></div>${gantt(et)}`
+    + tabela('etapas', et, [{h:'Etapa', k:'nome'}, {h:'Período', f:e => `${fdata(e.inicio)} a ${fdata(e.fim)}`}, ...(fin ? [{h:'Custo previsto', r:1, f:e => brl(e.custoPrevisto)}] : []), {h:'Andamento', f:e => `<div style="min-width:150px">${barra(+e.percentual || 0, +e.percentual >= 100 ? 'g' : '')}</div>`}], 'Cadastre as etapas (fundação, estrutura, alvenaria...) para acompanhar o avanço e o cronograma.');
+  else if (at === 'diario') {
+    const ds = S.data.diario.filter(d => d.obraId === o.id).sort((a, b) => b.data.localeCompare(a.data) || b.criadoEm - a.criadoEm);
+    corpo = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="diario" data-b="${o.id}">+ Registro do dia</button></div>`
+      + (ds.length ? `<div class="diario">${ds.map(d => `<div class="dia" data-act="edit" data-a="diario" data-b="${d.id}">${d.fotoThumb ? `<img src="${d.fotoThumb}" alt="">` : ''}<div><h5>${fdata(d.data)} · ${esc(d.clima || '')}${d.equipe ? ` · ${d.equipe} pessoa(s)` : ''}</h5><p>${esc(d.texto)}</p></div></div>`).join('')}</div>` : '<div class="vazio">Nenhum registro ainda. Registre o que foi feito no dia, com foto.</div>');
+  } else if (at === 'fin') {
+    const ls = lancObra(o.id).sort((a, b) => b.vencimento.localeCompare(a.vencimento));
+    corpo = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="lancamentos" data-b="${o.id}">+ Lançamento</button></div>` + tabelaLanc(ls);
+  } else if (at === 'mat') {
+    corpo = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn" data-act="novo" data-a="movimentos">Entrada / saída</button><button class="btn pri" data-act="novo" data-a="pedidos" data-b="${o.id}">+ Pedido de compra</button></div>`
+      + `<h3 style="font-size:14px">Materiais nesta obra</h3>` + tabelaMat(S.data.materiais.filter(m => m.obraId === o.id))
+      + `<h3 style="font-size:14px;margin-top:20px">Pedidos de compra</h3>` + tabelaPed(S.data.pedidos.filter(x => x.obraId === o.id));
+  } else {
+    const fs_ = S.data.funcionarios.filter(f => f.obraId === o.id && f.ativo !== false);
+    const aps = S.data.apontamentos.filter(a => a.obraId === o.id);
+    const custoMO = aps.reduce((s, a) => s + (+a.dias || 0) * (+(achar('funcionarios', a.funcionarioId) || {}).diaria || 0), 0);
+    corpo = `<div class="row" style="justify-content:space-between;margin-bottom:12px"><span style="color:var(--mut)">${aps.length} diária(s) lançada(s)${fin ? ' · ' + brl(custoMO) + ' em mão de obra' : ''}</span><button class="btn pri" data-act="lancarDiarias" data-a="${o.id}">Lançar diárias do dia</button></div>`
+      + tabela('funcionarios', fs_, [{h:'Nome', k:'nome'}, {h:'Função', k:'funcao'}, {h:'Diária', r:1, f:f => brl(f.diaria)}], 'Nenhum funcionário alocado nesta obra (defina a "Obra atual" no cadastro do funcionário).');
+  }
+  return `<button class="btn sm" data-act="nav" data-a="obras" style="margin-bottom:14px">← Obras</button>`
+  + topo(esc(o.nome) + ' ' + badgeObra(o.status), `${esc(nomeDe('clientes', o.clienteId, 'Sem cliente'))}${o.endereco ? ' · ' + esc(o.endereco) : ''} · ${fdata(o.inicio)} → ${fdata(o.previsao)}`,
+     `${o.portal && o.portalToken ? `<button class="btn" data-act="portal" data-a="${o.id}">🔗 Link do cliente</button>` : ''}<button class="btn" data-act="edit" data-a="obras" data-b="${o.id}">Editar obra</button>`)
+  + `<div class="kpis"><div class="kpi"><span>Avanço físico</span><b>${Math.round(p)}%</b>${barra(p)}</div>
+    ${fin ? `<div class="kpi"><span>Orçamento</span><b>${brl(orc)}</b></div>
+    <div class="kpi ${orc && g + ap > orc ? 'alert' : ''}"><span>Gasto (pago)</span><b>${brl(g)}</b><small>+ ${brl(ap)} a pagar${orc ? ` · ${Math.round((g + ap) / orc * 100)}% do orçamento` : ''}</small></div>
+    <div class="kpi"><span>Recebido do cliente</span><b style="color:var(--ok)">${brl(rec)}</b><small>lucro de caixa: ${brl(rec - g)}</small></div>` : ''}
+    <div class="kpi"><span>Prazo</span><b>${o.previsao ? (o.status === 'Concluída' ? 'Entregue' : diasAte(o.previsao) >= 0 ? diasAte(o.previsao) + ' dias' : 'Atrasada') : '—'}</b><small>${o.previsao ? 'entrega ' + fdata(o.previsao) : 'sem previsão'}</small></div></div>`
+  + tabs('obra', abas) + corpo;
+}
+
+/* ---------- financeiro ---------- */
+function tabelaLanc(ls) {
+  return tabela('lancamentos', ls, [{h:'Vencimento', f:l => fdata(l.vencimento)}, {h:'Descrição', f:l => `<b>${esc(l.descricao)}</b><br><small style="color:var(--mut)">${esc(l.categoria || '')}${l.obraId ? ' · ' + esc(nomeDe('obras', l.obraId)) : ''}</small>`},
+    {h:'Tipo', f:l => `<span class="badge ${l.tipo === 'Receber' ? 'b-ok' : 'b-mut'}">${l.tipo === 'Receber' ? '↑ Receber' : '↓ Pagar'}</span>`},
+    {h:'Valor', r:1, f:l => `<b style="color:${l.tipo === 'Receber' ? 'var(--ok)' : 'inherit'}">${brl(l.valor)}</b>`}, {h:'Situação', f:statusLanc},
+    {h:'', r:1, f:l => l.pago ? '' : `<button class="btn sm ok" data-act="baixar" data-a="${l.id}">${l.tipo === 'Receber' ? 'Recebi' : 'Paguei'}</button>`}], 'Nenhum lançamento.');
+}
+function pgFin() {
+  const F = S.filtro.fin || (S.filtro.fin = {tipo:'', sit:'aberto', obra:'', mes:''});
+  let ls = S.data.lancamentos.slice();
+  if (F.tipo) ls = ls.filter(l => l.tipo === F.tipo);
+  if (F.obra) ls = ls.filter(l => (F.obra === '_' ? !l.obraId : l.obraId === F.obra));
+  if (F.sit === 'aberto') ls = ls.filter(l => !l.pago); else if (F.sit === 'pago') ls = ls.filter(l => l.pago); else if (F.sit === 'vencido') ls = ls.filter(l => !l.pago && l.vencimento < hoje());
+  if (F.mes) ls = ls.filter(l => (l.vencimento || '').startsWith(F.mes));
+  ls.sort((a, b) => F.sit === 'pago' ? b.vencimento.localeCompare(a.vencimento) : a.vencimento.localeCompare(b.vencimento));
+  const soma = (t, pago) => S.data.lancamentos.filter(l => l.tipo === t && !!l.pago === pago).reduce((s, l) => s + +l.valor, 0);
+  const tr = ls.filter(l => l.tipo === 'Receber').reduce((s, l) => s + +l.valor, 0), tp = ls.filter(l => l.tipo === 'Pagar').reduce((s, l) => s + +l.valor, 0);
+  const op = (v, l, cur) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${l}</option>`;
+  const meses = [...new Set(S.data.lancamentos.map(l => (l.vencimento || '').slice(0, 7)).filter(Boolean))].sort().reverse();
+  return topo('Financeiro', 'Contas a pagar e a receber de todas as obras', `<button class="btn pri" data-act="novo" data-a="lancamentos">+ Lançamento</button>`)
+  + `<div class="kpis"><div class="kpi"><span>A receber (em aberto)</span><b style="color:var(--ok)">${brl(soma('Receber', false))}</b></div><div class="kpi"><span>A pagar (em aberto)</span><b>${brl(soma('Pagar', false))}</b></div>
+    <div class="kpi"><span>Total recebido</span><b>${brl(soma('Receber', true))}</b></div><div class="kpi"><span>Total pago</span><b>${brl(soma('Pagar', true))}</b></div></div>
+  <div class="row" style="margin-bottom:12px">
+    <select class="sel" data-chg="fin" data-a="tipo">${op('', 'Pagar e receber', F.tipo)}${op('Pagar', 'Só a pagar', F.tipo)}${op('Receber', 'Só a receber', F.tipo)}</select>
+    <select class="sel" data-chg="fin" data-a="sit">${op('aberto', 'Em aberto', F.sit)}${op('vencido', 'Vencidos', F.sit)}${op('pago', 'Pagos / recebidos', F.sit)}${op('', 'Todos', F.sit)}</select>
+    <select class="sel" data-chg="fin" data-a="obra">${op('', 'Todas as obras', F.obra)}${op('_', 'Sem obra (administrativo)', F.obra)}${S.data.obras.map(o => op(o.id, esc(o.nome), F.obra)).join('')}</select>
+    <select class="sel" data-chg="fin" data-a="mes">${op('', 'Qualquer mês', F.mes)}${meses.map(m => op(m, m.split('-').reverse().join('/'), F.mes)).join('')}</select>
+    <span style="margin-left:auto;color:var(--mut)">Filtrado: <b style="color:var(--ok)">+${brl(tr)}</b> · <b>−${brl(tp)}</b></span></div>` + tabelaLanc(ls);
+}
+
+/* ---------- materiais ---------- */
+function tabelaMat(ms) {
+  return tabela('materiais', ms.sort((a, b) => a.nome.localeCompare(b.nome)), [{h:'Material', k:'nome'}, {h:'Local', f:m => esc(m.obraId ? nomeDe('obras', m.obraId) : 'Depósito central')},
+    {h:'Estoque', r:1, f:m => { const b = m.minimo !== '' && m.minimo != null && +m.quantidade < +m.minimo; return `<span class="badge ${b ? 'b-bad' : 'b-ok'}">${num(m.quantidade)} ${esc(m.unidade || '')}</span>`; }},
+    {h:'Mínimo', r:1, f:m => m.minimo === '' || m.minimo == null ? '—' : num(m.minimo)}, ...(pode('financeiro') ? [{h:'Valor em estoque', r:1, f:m => brl((+m.quantidade || 0) * (+m.custoUnit || 0))}] : []),
+    {h:'', r:1, f:m => `<button class="btn sm" data-act="mov" data-a="${m.id}" data-b="Entrada">+ Entrada</button> <button class="btn sm" data-act="mov" data-a="${m.id}" data-b="Saída">− Saída</button>`}], 'Nenhum material cadastrado.');
+}
+function tabelaPed(ps) {
+  return tabela('pedidos', ps.sort((a, b) => (b.data || '').localeCompare(a.data || '')), [{h:'Data', f:p => fdata(p.data)}, {h:'Fornecedor', f:p => esc(nomeDe('fornecedores', p.fornecedorId))},
+    {h:'Obra', f:p => esc(p.obraId ? nomeDe('obras', p.obraId) : 'Depósito')}, {h:'Itens', f:p => `<small>${esc((p.itens || '').split('\n').slice(0, 2).join(' · '))}</small>`},
+    {h:'Valor', r:1, f:p => brl(p.valor)}, {h:'Status', f:p => `<span class="badge ${({Entregue:'b-ok', Aprovado:'b-info', Cancelado:'b-mut'})[p.status] || 'b-warn'}">${esc(p.status || 'Aberto')}</span>`},
+    {h:'', r:1, f:p => { const fo = achar('fornecedores', p.fornecedorId); return `${fo && fo.telefone ? `<a class="btn sm" target="_blank" data-stop href="${wa(fo.telefone, textoPedido(p))}">WhatsApp</a> ` : ''}${p.lancamentoId || p.status === 'Cancelado' || !pode('financeiro') ? '' : `<button class="btn sm" data-act="pedConta" data-a="${p.id}">Gerar conta</button>`}`; }}], 'Nenhum pedido de compra.');
+}
+const textoPedido = p => `Olá! Pedido de compra da ${S.empresa.nome}${p.obraId ? ' para a obra ' + nomeDe('obras', p.obraId) : ''}:\n\n${p.itens}\n\n${p.previsaoEntrega ? 'Entrega até: ' + fdata(p.previsaoEntrega) + '\n' : ''}Pode confirmar valores e prazo?`;
+function pgMat() {
+  const at = tabAt('mat', 'est');
+  let c = '';
+  if (at === 'est') c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="materiais">+ Material</button></div>` + tabelaMat(S.data.materiais.slice());
+  else if (at === 'mov') c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="movimentos">+ Entrada / saída</button></div>`
+    + tabela('movimentos', S.data.movimentos.slice().sort((a, b) => (b.data || '').localeCompare(a.data || '') || b.criadoEm - a.criadoEm), [{h:'Data', f:m => fdata(m.data)}, {h:'Material', f:m => esc(nomeDe('materiais', m.materialId))},
+      {h:'Tipo', f:m => `<span class="badge ${m.tipo === 'Entrada' ? 'b-ok' : 'b-warn'}">${m.tipo}</span>`}, {h:'Qtd.', r:1, f:m => num(m.quantidade)}, {h:'Obs.', k:'obs'}], 'Nenhuma movimentação.');
+  else if (at === 'ped') c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="pedidos">+ Pedido de compra</button></div>` + tabelaPed(S.data.pedidos.slice());
+  else c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="fornecedores">+ Fornecedor</button></div>`
+    + tabela('fornecedores', S.data.fornecedores.slice().sort((a, b) => a.nome.localeCompare(b.nome)), [{h:'Nome', k:'nome'}, {h:'Fornece', k:'categoria'}, {h:'WhatsApp', k:'telefone'}, {h:'E-mail', k:'email'}, {h:'Pedidos', r:1, f:f => S.data.pedidos.filter(p => p.fornecedorId === f.id).length}], 'Nenhum fornecedor.');
+  return topo('Materiais', 'Estoque por obra, entradas e saídas, compras e fornecedores') + tabs('mat', [['est','Estoque'], ['mov','Movimentações'], ['ped','Pedidos de compra'], ['for','Fornecedores']]) + c;
+}
+
+/* ---------- equipe ---------- */
+function pgEquipe() {
+  const at = tabAt('eq', 'func'), fin = pode('financeiro') || S.perfil.papel === 'admin';
+  let c = '';
+  if (at === 'func') c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="funcionarios">+ Funcionário</button></div>`
+    + tabela('funcionarios', S.data.funcionarios.slice().sort((a, b) => (b.ativo !== false) - (a.ativo !== false) || a.nome.localeCompare(b.nome)), [
+      {h:'Nome', f:f => `<b>${esc(f.nome)}</b>${f.ativo === false ? ' <span class="badge b-mut">inativo</span>' : ''}`}, {h:'Função', k:'funcao'}, {h:'Obra atual', f:f => esc(nomeDe('obras', f.obraId))},
+      {h:'Diária', r:1, f:f => brl(f.diaria)}, {h:'Diárias em aberto', r:1, f:f => num(diariasAbertas(f.id).reduce((s, a) => s + +a.dias, 0))},
+      ...(fin ? [{h:'A pagar', r:1, f:f => `<b>${brl(diariasAbertas(f.id).reduce((s, a) => s + +a.dias, 0) * (+f.diaria || 0))}</b>`}, {h:'', r:1, f:f => diariasAbertas(f.id).length ? `<button class="btn sm ok" data-act="pagarFunc" data-a="${f.id}">Pagar</button>` : ''}] : [])], 'Nenhum funcionário cadastrado.');
+  else if (at === 'dia') c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn" data-act="novo" data-a="apontamentos">+ Diária avulsa</button><button class="btn pri" data-act="lancarDiarias">Lançar diárias do dia</button></div>`
+    + tabela('apontamentos', S.data.apontamentos.slice().sort((a, b) => b.data.localeCompare(a.data)).slice(0, 300), [{h:'Data', f:a => fdata(a.data)}, {h:'Funcionário', f:a => esc(nomeDe('funcionarios', a.funcionarioId))},
+      {h:'Obra', f:a => esc(nomeDe('obras', a.obraId))}, {h:'Período', f:a => +a.dias === 1 ? 'Dia inteiro' : 'Meio período'}, {h:'Situação', f:a => a.pago ? '<span class="badge b-ok">Pago</span>' : '<span class="badge b-warn">A pagar</span>'}], 'Nenhuma diária lançada.');
+  else c = `<div id="usrs"><div class="vazio">Carregando...</div></div>`, setTimeout(carregarUsuarios, 0);
+  return topo('Equipe', 'Funcionários das obras, diárias e acesso ao sistema') + tabs('eq', [['func','Funcionários'], ['dia','Diárias'], ...(S.perfil.papel === 'admin' ? [['usr','Usuários do sistema']] : [])]) + c;
+}
+async function carregarUsuarios() {
+  const el = $('#usrs'); if (!el) return;
+  const us = await API.usuariosDaEmpresa(S.eid);
+  el.innerHTML = `<div class="row" style="justify-content:space-between;margin-bottom:12px"><span style="color:var(--mut)">Dê acesso para engenheiros, mestres de obras e financeiro. Cada um vê só o que precisa.</span><button class="btn pri" data-act="novoUsuario">+ Usuário</button></div>`
+   + `<div class="tw"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th></th></tr></thead><tbody>${us.map(u => `<tr><td><b>${esc(u.nome)}</b></td><td>${esc(u.email)}</td><td>${esc(PAPEIS[u.papel] || u.papel)}</td><td class="r">${u.uid === S.uid ? '<span class="badge b-pri">você</span>' : `<button class="btn sm danger" data-act="rmUsuario" data-a="${u.uid}">Remover acesso</button>`}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+/* ---------- clientes ---------- */
+function pgCli() {
+  const at = tabAt('cli', 'cli');
+  let c = '';
+  if (at === 'cli') c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="clientes">+ Cliente</button></div>`
+    + tabela('clientes', S.data.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome)), [{h:'Nome', f:c => `<b>${esc(c.nome)}</b>`}, {h:'CPF / CNPJ', k:'cpfCnpj'}, {h:'WhatsApp', k:'telefone'},
+      {h:'Obras', f:c => esc(S.data.obras.filter(o => o.clienteId === c.id).map(o => o.nome).join(', ') || '—')},
+      {h:'', r:1, f:c => c.telefone ? `<a class="btn sm" target="_blank" data-stop href="${wa(c.telefone, `Olá, ${c.nome.split(' ')[0]}! Aqui é da ${S.empresa.nome}.`)}">WhatsApp</a>` : ''}], 'Nenhum cliente cadastrado.');
+  else c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="contratos">+ Contrato</button></div>`
+    + tabela('contratos', S.data.contratos.slice().sort((a, b) => (b.assinadoEm || '').localeCompare(a.assinadoEm || '')), [{h:'Nº', k:'numero'}, {h:'Cliente', f:x => esc(nomeDe('clientes', x.clienteId))}, {h:'Obra', f:x => esc(nomeDe('obras', x.obraId))},
+      {h:'Assinado', f:x => fdata(x.assinadoEm)}, {h:'Valor', r:1, f:x => `<b>${brl(x.valor)}</b><br><small style="color:var(--mut)">${x.parcelas || 1}x de ${brl((+x.valor || 0) / (+x.parcelas || 1))}</small>`},
+      {h:'Recebido', r:1, f:x => { const r = S.data.lancamentos.filter(l => l.contratoId === x.id && l.pago).reduce((s, l) => s + +l.valor, 0); return brl(r); }},
+      {h:'', r:1, f:x => x.parcelasGeradas ? '<span class="badge b-ok">parcelas no financeiro</span>' : (pode('financeiro') ? `<button class="btn sm" data-act="gerarParcelas" data-a="${x.id}">Gerar parcelas</button>` : '')}], 'Nenhum contrato.');
+  return topo('Clientes', 'Cadastro de clientes e contratos') + tabs('cli', [['cli','Clientes'], ['con','Contratos']]) + c;
+}
+
+/* ---------- configurações ---------- */
+function pgCfg() {
+  const e = S.empresa, adm = S.perfil.papel === 'admin';
+  const st = e.status === 'teste' ? '<span class="badge b-info">Teste grátis</span>' : bloqueada(e) ? '<span class="badge b-bad">Bloqueada</span>' : '<span class="badge b-ok">Ativa</span>';
+  return topo('Configurações', 'Dados da construtora e assinatura')
+  + `<div class="grid2"><div class="card"><h3>Dados da construtora</h3><form id="frmEmp">
+    <div class="fld"><label>Nome da construtora</label><input id="e_nome" value="${esc(e.nome)}" ${adm ? '' : 'disabled'}></div>
+    <div class="f2"><div class="fld"><label>CNPJ</label><input id="e_cnpj" value="${esc(e.cnpj)}" ${adm ? '' : 'disabled'}></div><div class="fld"><label>WhatsApp</label><input id="e_tel" value="${esc(e.telefone)}" ${adm ? '' : 'disabled'}></div></div>
+    <div class="fld"><label>Cidade / UF</label><input id="e_cid" value="${esc(e.cidade)}" ${adm ? '' : 'disabled'}></div>
+    ${adm ? '<button class="btn pri">Salvar dados</button>' : ''}</form></div>
+    <div class="card"><h3>Assinatura</h3><div class="list">
+      <div class="it"><span>Situação</span>${st}</div><div class="it"><span>Válida até</span><b>${fdata(iso(e.venceTs || Date.now()))}</b></div>
+      <div class="it"><span>Plano</span><b>${brl(PRECO_MENSAL)}/mês · obras e usuários ilimitados</b></div></div>
+      <a class="btn pri" style="margin-top:14px" target="_blank" href="${wa(WHATS_SUPORTE, `Olá! Quero ${e.status === 'teste' ? 'assinar' : 'renovar'} o Gestor de Obras da ${e.nome}.`)}">${e.status === 'teste' ? 'Assinar agora' : 'Renovar assinatura'}</a>
+      <a class="btn" style="margin-top:14px" target="_blank" href="${wa(WHATS_SUPORTE, 'Olá! Preciso de ajuda com o Gestor de Obras.')}">Suporte</a></div></div>
+  ${adm ? `<div class="card" style="margin-top:16px"><h3>Seus dados</h3><p style="color:var(--mut);margin-top:0">Baixe uma cópia de todas as informações da construtora (backup).</p><div class="row"><button class="btn" data-act="backup">Baixar backup (JSON)</button>${!S.data.obras.length ? '<button class="btn" data-act="exemplo">Carregar dados de exemplo</button>' : ''}</div></div>` : ''}`;
+}
+
+/* ---------- painel do dono do sistema (assinantes) ---------- */
+async function pgAdmin() {
+  if (!isAdmin()) return '';
+  const es = (await API.listEmpresas()).sort((a, b) => (a.venceTs || 0) - (b.venceTs || 0));
+  const ativas = es.filter(e => e.status === 'ativo' && !bloqueada(e)), teste = es.filter(e => e.status === 'teste' && !bloqueada(e)), bl = es.filter(bloqueada);
+  return topo('Assinantes', 'Construtoras que usam o Gestor de Obras')
+  + `<div class="kpis"><div class="kpi"><span>Construtoras</span><b>${es.length}</b></div><div class="kpi"><span>Pagantes ativas</span><b style="color:var(--ok)">${ativas.length}</b></div>
+    <div class="kpi"><span>Em teste</span><b>${teste.length}</b></div><div class="kpi ${bl.length ? 'alert' : ''}"><span>Vencidas / bloqueadas</span><b>${bl.length}</b></div>
+    <div class="kpi"><span>Receita mensal</span><b>${brl(ativas.length * PRECO_MENSAL)}</b></div></div>`
+  + `<div class="tw"><table><thead><tr><th>Construtora</th><th>Responsável</th><th>Situação</th><th>Vence</th><th></th></tr></thead><tbody>${es.map(e => {
+      const d = Math.ceil(((e.venceTs || 0) - Date.now()) / 864e5);
+      const st = e.status === 'bloqueado' ? '<span class="badge b-bad">Bloqueada</span>' : d < 0 ? '<span class="badge b-bad">Vencida</span>' : e.status === 'teste' ? '<span class="badge b-info">Teste</span>' : '<span class="badge b-ok">Ativa</span>';
+      return `<tr><td><b>${esc(e.nome)}</b><br><small style="color:var(--mut)">${esc(e.cidade || '')}</small></td><td>${esc(e.donoNome || '')}<br><small style="color:var(--mut)">${esc(e.donoEmail || '')} ${e.telefone ? '· ' + esc(e.telefone) : ''}</small></td><td>${st}</td>
+      <td>${fdata(iso(e.venceTs || 0))}<br><small style="color:${d < 0 ? 'var(--bad)' : 'var(--mut)'}">${d < 0 ? Math.abs(d) + ' dia(s) atrás' : 'em ' + d + ' dia(s)'}</small></td>
+      <td class="r" style="white-space:nowrap"><button class="btn sm ok" data-act="admRenovar" data-a="${e.id}">+30 dias (pago)</button> ${e.status === 'bloqueado' ? `<button class="btn sm" data-act="admStatus" data-a="${e.id}" data-b="ativo">Liberar</button>` : `<button class="btn sm danger" data-act="admStatus" data-a="${e.id}" data-b="bloqueado">Bloquear</button>`}
+      ${e.telefone ? `<a class="btn sm" target="_blank" href="${wa(e.telefone, `Olá, ${e.donoNome || ''}! Aqui é do Gestor de Obras.`)}">WhatsApp</a>` : ''}</td></tr>`;
+    }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--mut)">Nenhuma construtora cadastrada ainda.</td></tr>'}</tbody></table></div>`;
+}
+
+/* ===================== AÇÕES ===================== */
+const ACT = {
+  nav:a => { S.page = a; S.obraId = null; window.scrollTo(0, 0); render(); },
+  obra:a => { S.page = 'obra'; S.obraId = a; S.tab.obra = 'etapas'; window.scrollTo(0, 0); render(); },
+  tab:(a, b) => { S.tab[a] = b; render(); },
+  novo:(col, obraId) => {
+    const base = {
+      obras:{status:'Em andamento', inicio:hoje()}, diario:{data:hoje(), clima:'Ensolarado', obraId:obraId || S.obraId || ''},
+      lancamentos:{tipo:'Pagar', vencimento:hoje(), obraId:obraId || ''}, etapas:{obraId:obraId || '', percentual:0},
+      movimentos:{data:hoje(), tipo:'Entrada'}, pedidos:{data:hoje(), status:'Aberto', obraId:obraId || ''},
+      funcionarios:{ativo:true}, apontamentos:{data:hoje(), dias:'1'}, contratos:{assinadoEm:hoje(), parcelas:1, primeiroVenc:hoje()}, materiais:{unidade:'un'}
+    }[col] || {};
+    if (col === 'movimentos' && !S.data.materiais.length) return toast('Cadastre um material primeiro.');
+    if (col === 'pedidos' && !S.data.fornecedores.length) return toast('Cadastre um fornecedor primeiro.');
+    if (['etapas','diario'].includes(col) && !S.data.obras.length) return toast('Cadastre uma obra primeiro.');
+    abrirForm(col, base);
+  },
+  edit:(col, id) => { const r = achar(col, id); if (r) abrirForm(col, r); },
+  mov:(mid, tipo) => abrirForm('movimentos', {materialId:mid, tipo, data:hoje()}),
+  baixar:async id => { const l = achar('lancamentos', id); await salvar('lancamentos', {...l, pago:true, dataPagamento:hoje()}); render(); toast(l.tipo === 'Receber' ? 'Recebimento registrado' : 'Pagamento registrado'); },
+  portal:async id => {
+    const o = achar('obras', id), url = linkPortal(o);
+    await syncPortal(id);
+    modal(`<h3>Portal do cliente</h3><p style="color:var(--mut);margin-top:0">Envie este link para o cliente acompanhar o andamento, o cronograma e as fotos do diário — sem valores financeiros.</p>
+      <div class="fld"><input value="${esc(url)}" readonly onclick="this.select()"></div>
+      ${USE_FB ? '' : '<p class="demo">Modo demonstração: o link só abre neste navegador. Com o Firebase configurado, funciona em qualquer celular.</p>'}
+      <div class="mact"><a class="btn" target="_blank" href="${esc(url)}">Abrir</a><span style="flex:1"></span>
+      ${(() => { const c = achar('clientes', o.clienteId); return c && c.telefone ? `<a class="btn pri" target="_blank" href="${wa(c.telefone, `Olá, ${c.nome.split(' ')[0]}! Acompanhe a sua obra "${o.nome}" por aqui: ${url}`)}">Enviar no WhatsApp</a>` : ''; })()}
+      <button class="btn" onclick="navigator.clipboard.writeText('${esc(url)}');toast('Link copiado')">Copiar</button></div>`);
+  },
+  pedConta:async id => {
+    const p = achar('pedidos', id);
+    const l = await salvar('lancamentos', {tipo:'Pagar', categoria:'Material', descricao:`Pedido — ${nomeDe('fornecedores', p.fornecedorId)}`, obraId:p.obraId || '', valor:+p.valor || 0, vencimento:p.previsaoEntrega || hoje(), pago:false, pedidoId:p.id});
+    await salvar('pedidos', {...p, lancamentoId:l.id}); render(); toast('Conta a pagar criada no financeiro');
+  },
+  pagarFunc:async fid => {
+    const f = achar('funcionarios', fid), aps = diariasAbertas(fid), dias = aps.reduce((s, a) => s + +a.dias, 0), total = dias * (+f.diaria || 0);
+    if (!confirm(`Registrar pagamento de ${num(dias)} diária(s) para ${f.nome}: ${brl(total)}?\nO valor entra no financeiro como mão de obra, separado por obra.`)) return;
+    const porObra = {};
+    aps.forEach(a => { porObra[a.obraId || ''] = (porObra[a.obraId || ''] || 0) + +a.dias; });
+    for (const [oid, d] of Object.entries(porObra)) await salvar('lancamentos', {tipo:'Pagar', categoria:'Mão de obra', descricao:`Diárias — ${f.nome} (${num(d)} dia(s))`, obraId:oid, valor:+(d * (+f.diaria || 0)).toFixed(2), vencimento:hoje(), pago:true, dataPagamento:hoje()});
+    for (const a of aps) await salvar('apontamentos', {...a, pago:true});
+    render(); toast('Pagamento registrado');
+  },
+  lancarDiarias:obraId => {
+    const ativos = S.data.funcionarios.filter(f => f.ativo !== false);
+    if (!ativos.length) return toast('Cadastre os funcionários primeiro.');
+    if (!S.data.obras.length) return toast('Cadastre uma obra primeiro.');
+    const oid = obraId || (S.data.obras.find(o => o.status === 'Em andamento') || S.data.obras[0]).id;
+    modal(`<h3>Lançar diárias do dia</h3><div class="f2"><div class="fld"><label>Data</label><input type="date" id="d_data" value="${hoje()}"></div>
+      <div class="fld"><label>Obra</label><select id="d_obra">${S.data.obras.map(o => `<option value="${o.id}" ${o.id === oid ? 'selected' : ''}>${esc(o.nome)}</option>`).join('')}</select></div></div>
+      <div class="fld"><label>Quem trabalhou</label><div class="checks" id="d_lista"></div></div>
+      <div class="mact"><span style="flex:1"></span><button class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri" id="d_ok">Lançar</button></div>`);
+    const lista = () => { const o = $('#d_obra').value; $('#d_lista').innerHTML = ativos.map(f => `<label><input type="checkbox" value="${f.id}" ${f.obraId === o ? 'checked' : ''}><span style="flex:1">${esc(f.nome)} <small style="color:var(--mut)">${esc(f.funcao || '')}</small></span><select data-f="${f.id}" class="sel" style="padding:3px 6px"><option value="1">Dia</option><option value="0.5">Meio</option></select></label>`).join(''); };
+    lista(); $('#d_obra').onchange = lista;
+    $('#d_ok').onclick = async () => {
+      const data = $('#d_data').value, o = $('#d_obra').value, marc = [...document.querySelectorAll('#d_lista input:checked')];
+      if (!marc.length) return toast('Marque pelo menos um funcionário.');
+      let pul = 0;
+      for (const c of marc) {
+        if (S.data.apontamentos.some(a => a.funcionarioId === c.value && a.data === data)) { pul++; continue; }
+        await salvar('apontamentos', {funcionarioId:c.value, obraId:o, data, dias:document.querySelector(`#d_lista select[data-f="${c.value}"]`).value, pago:false});
+      }
+      fecharModal(); render(); toast(`${marc.length - pul} diária(s) lançada(s)${pul ? ` · ${pul} já existia(m) nesse dia` : ''}`);
+    };
+  },
+  gerarParcelas:async id => {
+    const c = achar('contratos', id), n = Math.max(1, +c.parcelas || 1), tot = +c.valor || 0, base = Math.floor(tot / n * 100) / 100;
+    if (!confirm(`Gerar ${n} parcela(s) a receber de ${brl(base)} no financeiro?`)) return;
+    for (let i = 0; i < n; i++) await salvar('lancamentos', {tipo:'Receber', categoria:'Medição / Parcela do cliente', descricao:`Contrato ${c.numero || ''} — parcela ${i + 1}/${n} (${nomeDe('clientes', c.clienteId)})`, obraId:c.obraId || '', valor:i === n - 1 ? +(tot - base * (n - 1)).toFixed(2) : base, vencimento:addMes(c.primeiroVenc || hoje(), i), pago:false, contratoId:c.id});
+    await salvar('contratos', {...c, parcelasGeradas:true}); render(); toast('Parcelas criadas no financeiro');
+  },
+  novoUsuario:() => {
+    modal(`<h3>Novo usuário</h3><form id="frmU"><div class="fld"><label>Nome</label><input id="u_nome" required></div><div class="fld"><label>E-mail</label><input id="u_email" type="email" required></div>
+      <div class="fld"><label>Senha inicial (mín. 6 caracteres)</label><input id="u_senha" minlength="6" required></div>
+      <div class="fld"><label>Perfil</label><select id="u_papel"><option value="engenheiro">Engenheiro / Mestre de obras — obras, diário, materiais, equipe</option><option value="financeiro">Financeiro — financeiro, clientes, obras</option><option value="admin">Administrador — tudo</option></select></div>
+      <div class="mact"><span style="flex:1"></span><button type="button" class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri">Criar acesso</button></div></form>`);
+    $('#frmU').onsubmit = async e => {
+      e.preventDefault();
+      try { const em = $('#u_email').value.trim().toLowerCase(); const uid = await API.criarUsuarioSecundario(em, $('#u_senha').value);
+        await API.setPerfil(uid, {nome:$('#u_nome').value.trim(), email:em, empresaId:S.eid, papel:$('#u_papel').value});
+        fecharModal(); carregarUsuarios(); toast('Usuário criado. Passe o e-mail e a senha para ele.'); }
+      catch (err) { toast(traduz(err)); }
+    };
+  },
+  rmUsuario:async uid => { if (!confirm('Remover o acesso deste usuário à construtora?')) return; await API.delPerfil(uid); carregarUsuarios(); toast('Acesso removido'); },
+  backup:() => { const b = new Blob([JSON.stringify({empresa:S.empresa, dados:S.data, geradoEm:new Date().toISOString()}, null, 1)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `backup-gestor-de-obras-${hoje()}.json`; a.click(); },
+  exemplo:async () => { if (!confirm('Carregar obras, clientes, funcionários e lançamentos de exemplo?')) return; toast('Carregando exemplo...'); await dadosExemplo(); S.page = 'dashboard'; render(); toast('Dados de exemplo carregados'); },
+  admRenovar:async eid => { const e = await API.getEmpresa(eid); const base = Math.max(Date.now(), e.venceTs || 0); await API.setEmpresa(eid, {status:'ativo', venceTs:base + 30 * 864e5}); if (eid === S.eid) S.empresa = await API.getEmpresa(eid); render(); toast('Renovada por 30 dias'); },
+  admStatus:async (eid, st) => { if (st === 'bloqueado' && !confirm('Bloquear o acesso desta construtora?')) return; const e = await API.getEmpresa(eid); const x = {status:st}; if (st === 'ativo' && (e.venceTs || 0) < Date.now()) x.venceTs = Date.now() + 3 * 864e5; await API.setEmpresa(eid, x); render(); toast(st === 'ativo' ? 'Liberada' : 'Bloqueada'); },
+  sair:async () => { await API.logout(); location.href = location.pathname; }
+};
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-stop]')) return;
+  const b = e.target.closest('[data-act]');
+  if (b) { e.preventDefault(); e.stopPropagation(); const f = ACT[b.dataset.act]; if (f) Promise.resolve(f(b.dataset.a, b.dataset.b)).catch(err => { console.error(err); toast('Erro: ' + err.message); }); return; }
+  const tr = e.target.closest('tr[data-id]');
+  if (tr && tr.dataset.col) { if (tr.dataset.col === 'obras') ACT.obra(tr.dataset.id); else ACT.edit(tr.dataset.col, tr.dataset.id); }
+});
+document.addEventListener('change', e => {
+  const s = e.target.closest('[data-chg]'); if (!s) return;
+  if (s.dataset.chg === 'filtro') S.filtro[s.dataset.a] = s.value; else if (s.dataset.chg === 'fin') S.filtro.fin[s.dataset.a] = s.value;
+  render();
+});
+document.addEventListener('submit', async e => {
+  if (e.target.id !== 'frmEmp') return; e.preventDefault();
+  const x = {nome:$('#e_nome').value.trim(), cnpj:$('#e_cnpj').value.trim(), telefone:$('#e_tel').value.trim(), cidade:$('#e_cid').value.trim()};
+  await API.setEmpresa(S.eid, x); Object.assign(S.empresa, x); montarApp(); toast('Dados salvos');
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModal(); });
+
+/* ===================== LOGIN / CADASTRO ===================== */
+function traduz(err) {
+  const c = err.code || '';
+  return ({'auth/invalid-credential':'E-mail ou senha incorretos.', 'auth/wrong-password':'E-mail ou senha incorretos.', 'auth/user-not-found':'E-mail ou senha incorretos.', 'auth/email-already-in-use':'Este e-mail já está cadastrado.', 'auth/weak-password':'A senha precisa ter pelo menos 6 caracteres.', 'auth/invalid-email':'E-mail inválido.', 'auth/too-many-requests':'Muitas tentativas. Aguarde alguns minutos.', 'permission-denied':'Sem permissão. Verifique as regras do Firestore.'})[c] || err.message;
+}
+function telaLogin(aba = 'entrar') {
+  $('#root').innerHTML = `<div class="auth"><div class="authL"><div class="brand" style="padding:0"><div class="logo">${ico('logo')}</div>Gestor de Obras</div>
+    <h1>Sua construtora organizada, da fundação à entrega.</h1><p>Obras, cronograma, diário com fotos, custos, materiais, equipe e clientes em um só lugar — no computador ou no celular.</p>
+    <ul><li>Custo real × orçamento de cada obra</li><li>Diário de obra com fotos direto do canteiro</li><li>Contas a pagar e receber, parcelas de contrato</li><li>Estoque por obra e pedidos ao fornecedor pelo WhatsApp</li><li>Diárias da equipe e pagamento em um clique</li><li>Portal para o cliente acompanhar a obra</li></ul></div>
+    <div class="authR"><div class="authBox"><div class="tabs"><button class="${aba === 'entrar' ? 'on' : ''}" onclick="telaLogin('entrar')">Entrar</button><button class="${aba === 'criar' ? 'on' : ''}" onclick="telaLogin('criar')">Criar conta grátis</button></div>
+    ${aba === 'entrar' ? `<h2>Entrar</h2><p style="color:var(--mut);margin-top:4px">Acesse a sua construtora.</p><form id="fl">
+      <div class="fld"><label>E-mail</label><input id="l_email" type="email" required autocomplete="email"></div>
+      <div class="fld"><label>Senha</label><input id="l_senha" type="password" required autocomplete="current-password"></div>
+      <button class="btn pri" id="l_ok">Entrar</button></form><p style="text-align:center"><a href="#" id="l_esq">Esqueci minha senha</a></p>`
+    : `<h2>Teste grátis por ${DIAS_TESTE} dias</h2><p style="color:var(--mut);margin-top:4px">Depois, ${brl(PRECO_MENSAL)}/mês. Sem fidelidade.</p><form id="fc">
+      <div class="fld"><label>Nome da construtora</label><input id="c_emp" required></div>
+      <div class="f2"><div class="fld"><label>Seu nome</label><input id="c_nome" required></div><div class="fld"><label>WhatsApp</label><input id="c_tel" required></div></div>
+      <div class="fld"><label>E-mail</label><input id="c_email" type="email" required autocomplete="email"></div>
+      <div class="fld"><label>Senha (mín. 6)</label><input id="c_senha" type="password" minlength="6" required autocomplete="new-password"></div>
+      <button class="btn pri" id="c_ok">Começar teste grátis</button></form>`}
+    ${USE_FB ? '' : `<div class="demo"><b>Modo demonstração.</b> Os dados ficam só neste navegador. Configure o Firebase para usar de verdade.<br><button class="btn sm" style="margin-top:8px;width:auto" id="b_demo">Entrar com dados de exemplo</button></div>`}
+    </div></div></div>`;
+  const fl = $('#fl'), fc = $('#fc');
+  if (fl) {
+    fl.onsubmit = async e => { e.preventDefault(); $('#l_ok').disabled = true; try { const uid = await API.login($('#l_email').value, $('#l_senha').value); await entrar(uid); } catch (err) { toast(traduz(err)); $('#l_ok').disabled = false; } };
+    $('#l_esq').onclick = async e => { e.preventDefault(); const em = $('#l_email').value || prompt('Seu e-mail:'); if (!em) return; try { await API.resetSenha(em); toast('Enviamos um link de nova senha para ' + em); } catch (err) { toast(traduz(err)); } };
+  }
+  if (fc) fc.onsubmit = async e => {
+    e.preventDefault(); $('#c_ok').disabled = true;
+    try { await criarConstrutora({empresa:$('#c_emp').value.trim(), nome:$('#c_nome').value.trim(), tel:$('#c_tel').value.trim(), email:$('#c_email').value.trim().toLowerCase(), senha:$('#c_senha').value}); }
+    catch (err) { console.error(err); toast(traduz(err)); $('#c_ok').disabled = false; }
+  };
+  const bd = $('#b_demo');
+  if (bd) bd.onclick = async () => {
+    try { let uid; try { uid = await API.login('demo@gestordeobras.com', '123456'); await entrar(uid); }
+      catch (e) { await criarConstrutora({empresa:'Construtora Exemplo', nome:'Usuário Demo', tel:'(88) 99999-0000', email:'demo@gestordeobras.com', senha:'123456'}, true); } }
+    catch (err) { toast(traduz(err)); }
+  };
+}
+async function criarConstrutora(c, exemplo) {
+  const uid = await API.criarConta(c.email, c.senha);
+  await API.setPerfil(uid, {nome:c.nome, email:c.email, empresaId:uid, papel:'admin'});
+  await API.setEmpresa(uid, {nome:c.empresa, telefone:c.tel, donoNome:c.nome, donoEmail:c.email, status:'teste', criadoEm:Date.now(), venceTs:Date.now() + DIAS_TESTE * 864e5});
+  await entrar(uid);
+  if (exemplo) { await dadosExemplo(); render(); }
+}
+async function entrar(uid) {
+  S.uid = uid; S.email = API.emailAtual();
+  S.perfil = await API.getPerfil(uid);
+  if (!S.perfil) {
+    if (isAdmin()) { S.page = 'admin'; S.empresa = null; return montarApp(); }
+    toast('Este usuário não está ligado a nenhuma construtora.'); await API.logout(); return telaLogin();
+  }
+  S.eid = S.perfil.empresaId; S.empresa = await API.getEmpresa(S.eid);
+  if (!S.empresa) { toast('Construtora não encontrada.'); await API.logout(); return telaLogin(); }
+  if (bloqueada(S.empresa) && !isAdmin()) return telaBloqueio();
+  await carregarTudo(); S.page = 'dashboard'; montarApp();
+}
+function telaBloqueio() {
+  const e = S.empresa;
+  $('#root').innerHTML = `<div class="authR" style="min-height:100vh"><div class="card" style="max-width:440px;text-align:center;padding:32px"><div class="logo" style="margin:0 auto 14px;width:48px;height:48px">${ico('logo')}</div>
+    <h2 style="margin:0 0 6px">${e.status === 'bloqueado' ? 'Acesso suspenso' : e.status === 'teste' ? 'Seu teste grátis terminou' : 'Assinatura vencida'}</h2>
+    <p style="color:var(--mut)">Os dados da <b>${esc(e.nome)}</b> estão guardados com segurança. Para voltar a usar, ${e.status === 'teste' ? 'assine' : 'renove'} o Gestor de Obras por <b>${brl(PRECO_MENSAL)}/mês</b>.</p>
+    <a class="btn pri" style="width:100%;justify-content:center;padding:11px" target="_blank" href="${wa(WHATS_SUPORTE, `Olá! Quero ${e.status === 'teste' ? 'assinar' : 'renovar'} o Gestor de Obras da ${e.nome}.`)}">Pagar pelo WhatsApp (Pix, boleto ou cartão)</a>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:8px" data-act="sair">Sair</button></div></div>`;
+}
+
+/* ===================== PORTAL PÚBLICO DO CLIENTE ===================== */
+async function renderPortal(token) {
+  document.title = 'Acompanhe sua obra';
+  $('#root').innerHTML = '<div class="portal"><div class="vazio">Carregando...</div></div>';
+  let p = null; try { p = await API.getPortal(token); } catch (e) { console.error(e); }
+  if (!p || !p.ativo) { $('#root').innerHTML = `<div class="portal"><div class="vazio">Este link não está disponível. Fale com a construtora.</div></div>`; return; }
+  document.title = p.obraNome + ' — acompanhamento';
+  $('#root').innerHTML = `<div class="portal"><div class="phead"><small style="color:var(--pri);font-weight:700;text-transform:uppercase;letter-spacing:.06em">${esc(p.empresaNome)}</small><h1>${esc(p.obraNome)}</h1><p>${esc(p.endereco)}</p>
+    <div style="display:flex;align-items:end;gap:18px;margin-top:18px;flex-wrap:wrap"><div><div class="big">${p.progresso}%</div><small style="color:#aab2bd">concluído</small></div><div style="flex:1;min-width:180px"><div class="bar" style="height:12px;border:0;background:#2a313c"><i style="width:${p.progresso}%"></i></div>
+    <div style="display:flex;justify-content:space-between;color:#aab2bd;font-size:12.5px;margin-top:8px"><span>Início ${fdata(p.inicio)}</span><span>Entrega prevista ${fdata(p.previsao)}</span></div></div></div></div>
+    <div class="card" style="margin-bottom:16px"><h3>Etapas da obra</h3><div class="list">${p.etapas.length ? p.etapas.map(e => `<div class="it"><div style="flex:1"><b>${esc(e.nome)}</b><small>${fdata(e.inicio)} a ${fdata(e.fim)}</small></div><div style="width:150px">${barra(e.percentual, e.percentual >= 100 ? 'g' : '')}</div></div>`).join('') : '<p style="color:var(--mut)">Em breve.</p>'}</div></div>
+    <div class="card"><h3>Diário da obra</h3><div class="diario">${p.diario.length ? p.diario.map(d => `<div class="dia" style="cursor:default">${d.thumb ? `<img src="${d.thumb}" alt="">` : ''}<div><h5>${fdata(d.data)}${d.clima ? ' · ' + esc(d.clima) : ''}</h5><p>${esc(d.texto)}</p></div></div>`).join('') : '<p style="color:var(--mut)">Nenhum registro ainda.</p>'}</div></div>
+    <p style="text-align:center;color:var(--mut);font-size:12.5px;margin-top:20px">Atualizado em ${new Date(p.atualizadoEm).toLocaleString('pt-BR')}${p.empresaTel ? ` · <a target="_blank" href="${wa(p.empresaTel, 'Olá! Tenho uma dúvida sobre a obra ' + p.obraNome + '.')}">Falar com a construtora</a>` : ''}</p></div>`;
+}
+
+/* ===================== DADOS DE EXEMPLO ===================== */
+async function dadosExemplo() {
+  const h = hoje(), d = n => addDias(h, n), sv = salvar;
+  const c1 = await sv('clientes', {nome:'Marcos Antônio Silva', cpfCnpj:'123.456.789-00', telefone:'(88) 99876-5432', email:'marcos@email.com', endereco:'Rua das Flores, 120'});
+  const c2 = await sv('clientes', {nome:'Ana Paula Costa', cpfCnpj:'987.654.321-00', telefone:'(88) 99777-1122', email:'ana@email.com', endereco:'Av. Central, 900'});
+  const c3 = await sv('clientes', {nome:'Grupo Jardins Empreendimentos', cpfCnpj:'12.345.678/0001-90', telefone:'(88) 3555-0000'});
+  const o1 = await sv('obras', {nome:'Residência Marcos Silva', clienteId:c1.id, endereco:'Loteamento Bela Vista, Qd. 4 Lt. 12', inicio:d(-95), previsao:d(110), orcamento:385000, status:'Em andamento', portal:true, portalToken:gid() + gid()});
+  const o2 = await sv('obras', {nome:'Reforma Loja Centro', clienteId:c2.id, endereco:'Av. Central, 900', inicio:d(-30), previsao:d(40), orcamento:92000, status:'Em andamento'});
+  const o3 = await sv('obras', {nome:'Edifício Jardins', clienteId:c3.id, endereco:'Rua Projetada B', inicio:d(60), previsao:d(600), orcamento:2400000, status:'Planejamento'});
+  const et = [
+    [o1, 'Serviços preliminares', -95, -85, 12000, 100], [o1, 'Fundação', -85, -60, 48000, 100], [o1, 'Estrutura', -60, -25, 72000, 100],
+    [o1, 'Alvenaria', -30, 10, 46000, 70], [o1, 'Instalações elétricas e hidráulicas', -10, 40, 52000, 25], [o1, 'Cobertura', 10, 45, 38000, 0],
+    [o1, 'Reboco e contrapiso', 30, 70, 41000, 0], [o1, 'Acabamento e pintura', 60, 110, 76000, 0],
+    [o2, 'Demolição', -30, -22, 6000, 100], [o2, 'Elétrica nova', -22, 5, 24000, 60], [o2, 'Gesso e forro', 0, 20, 18000, 10], [o2, 'Pintura e fachada', 15, 40, 22000, 0],
+    [o3, 'Projeto e aprovações', 0, 60, 80000, 35]
+  ];
+  for (const [o, nome, i, f, c, p] of et) await sv('etapas', {obraId:o.id, nome, inicio:d(i), fim:d(f), custoPrevisto:c, percentual:p});
+  for (const [o, n, t, cl, eq] of [[o1, -1, 'Alvenaria do pavimento superior: paredes dos quartos 1 e 2 concluídas. Recebido o cimento do pedido da semana.', 'Ensolarado', 6], [o1, -2, 'Passagem de eletrodutos na laje e caixas de luz da sala e cozinha.', 'Nublado', 5], [o1, -4, 'Chuva forte à tarde, serviço interrompido às 14h. Equipe adiantou organização do canteiro.', 'Chuvoso', 4], [o2, -1, 'Troca do quadro de distribuição e fiação do salão principal.', 'Ensolarado', 3]])
+    await sv('diario', {obraId:o.id, data:d(n), texto:t, clima:cl, equipe:eq});
+  const f1 = await sv('fornecedores', {nome:'Depósito Material Forte', cnpj:'11.222.333/0001-44', telefone:'(88) 99111-2233', categoria:'Cimento, areia, tijolo'});
+  const f2 = await sv('fornecedores', {nome:'Aço Nordeste', telefone:'(88) 99444-5566', categoria:'Ferragens e aço'});
+  const f3 = await sv('fornecedores', {nome:'Elétrica Cariri', telefone:'(88) 99333-7788', categoria:'Material elétrico'});
+  for (const [nome, un, o, q, mi, cu] of [['Cimento CP-II 50kg', 'saco', o1, 35, 50, 38.9], ['Areia média', 'm³', o1, 8, 5, 120], ['Tijolo 8 furos', 'milheiro', o1, 3, 2, 780], ['Vergalhão CA-50 10mm', 'barra', o1, 22, 30, 54], ['Cabo flexível 2,5mm', 'rolo', o2, 6, 4, 189], ['Argamassa AC-II', 'saco', null, 40, 20, 24.5]])
+    await sv('materiais', {nome, unidade:un, obraId:o ? o.id : '', quantidade:q, minimo:mi, custoUnit:cu});
+  await sv('pedidos', {fornecedorId:f1.id, obraId:o1.id, data:d(-1), previsaoEntrega:d(2), itens:'60 sacos de cimento CP-II\n6 m³ de areia média', valor:3054, status:'Aprovado'});
+  await sv('pedidos', {fornecedorId:f3.id, obraId:o2.id, data:d(-12), previsaoEntrega:d(-9), itens:'10 rolos de cabo 2,5mm\n1 quadro de distribuição 24 disjuntores', valor:2650, status:'Entregue'});
+  const L = (tipo, cat, desc, o, v, n, pago) => sv('lancamentos', {tipo, categoria:cat, descricao:desc, obraId:o ? o.id : '', valor:v, vencimento:d(n), pago, dataPagamento:pago ? d(n) : ''});
+  await L('Pagar', 'Material', 'Concreto usinado — fundação', o1, 38600, -70, true); await L('Pagar', 'Material', 'Aço e ferragens — estrutura', o1, 29400, -50, true);
+  await L('Pagar', 'Serviço terceirizado', 'Empreiteira — estrutura', o1, 41000, -26, true); await L('Pagar', 'Material', 'Tijolos e argamassa', o1, 14200, -12, true);
+  await L('Pagar', 'Equipamento / Locação', 'Locação de andaimes', o1, 1850, -3, false); await L('Pagar', 'Material', 'Pedido Depósito Material Forte', o1, 3054, 2, false);
+  await L('Pagar', 'Material', 'Material elétrico', o2, 2650, -9, true); await L('Pagar', 'Serviço terceirizado', 'Gesseiro — forro', o2, 9500, 12, false);
+  await L('Pagar', 'Administrativo', 'Contador', null, 650, 5, false); await L('Pagar', 'Taxas / Impostos', 'ART e taxas da prefeitura', o3, 2300, 18, false);
+  const ct = await sv('contratos', {clienteId:c1.id, obraId:o1.id, numero:'2026-014', assinadoEm:d(-100), valor:385000, parcelas:10, primeiroVenc:d(-90), obs:'Construção de residência térrea com 2 pavimentos, 180 m².', parcelasGeradas:true});
+  for (let i = 0; i < 10; i++) { const v = addMes(d(-90), i); await sv('lancamentos', {tipo:'Receber', categoria:'Medição / Parcela do cliente', descricao:`Contrato 2026-014 — parcela ${i + 1}/10 (Marcos Antônio Silva)`, obraId:o1.id, valor:38500, vencimento:v, pago:v < h, dataPagamento:v < h ? v : '', contratoId:ct.id}); }
+  await L('Receber', 'Medição / Parcela do cliente', 'Reforma Loja Centro — entrada', o2, 30000, -30, true); await L('Receber', 'Medição / Parcela do cliente', 'Reforma Loja Centro — 2ª medição', o2, 31000, 7, false);
+  const fs_ = [];
+  for (const [nome, func, di, o] of [['João Batista', 'Pedreiro', 180, o1], ['Carlos Henrique', 'Servente', 110, o1], ['Francisco Alves', 'Pedreiro', 180, o1], ['Pedro Lima', 'Eletricista', 200, o2], ['Luiz Gonzaga', 'Mestre de obras', 260, o1]])
+    fs_.push(await sv('funcionarios', {nome, funcao:func, diaria:di, obraId:o.id, ativo:true, telefone:'(88) 9' + Math.floor(1e7 + Math.random() * 8e7)}));
+  for (let n = 1; n <= 4; n++) for (const f of fs_) if (!(f.funcao === 'Mestre de obras' && n === 4)) await sv('apontamentos', {funcionarioId:f.id, obraId:f.obraId, data:d(-n), dias:n === 4 && f.funcao === 'Servente' ? '0.5' : '1', pago:false});
+  await syncPortal(o1.id);
+}
+
+/* ===================== INÍCIO ===================== */
+(async () => {
+  const q = new URLSearchParams(location.search);
+  if (q.get('portal')) return renderPortal(q.get('portal'));
+  try { const uid = await API.uidAtual(); if (uid) await entrar(uid); else telaLogin(); }
+  catch (e) { console.error(e); telaLogin(); toast(traduz(e)); }
+})();
+</script>
+</body>
+</html>
