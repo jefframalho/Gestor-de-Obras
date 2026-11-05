@@ -17,9 +17,20 @@ Sistema por assinatura para **várias construtoras**: cada construtora cria a co
 
 Perfis de usuário: **Administrador** (tudo), **Engenheiro / Mestre de obras** (obras, diário, materiais, equipe — sem financeiro), **Financeiro**.
 
+## Estrutura do site
+
+- `index.html` — página de vendas (raiz do site)
+- `app/index.html` — o sistema (login, painel, obras...)
+- `assets/` — prints do sistema usados na página de vendas
+- Botão "Testar grátis" abre `app/?criar=1` (direto no cadastro)
+
+## Orçamentos
+
+Itens por etapa com o seu custo, BDI/margem e desconto. "Salvar e gerar PDF" abre o orçamento em A4: clique em **Salvar PDF / Imprimir** e escolha **Salvar como PDF**. A logo vem de Configurações. **Aprovar** cria a obra, as etapas (com custo previsto) e o contrato.
+
 ## Testar agora
 
-Abra o `index.html` no navegador e clique em **Entrar com dados de exemplo**. Sem o Firebase configurado ele roda em modo demonstração (dados só naquele navegador).
+Abra o `app/index.html` no navegador e clique em **Entrar com dados de exemplo**. Sem o Firebase configurado ele roda em modo demonstração (dados só naquele navegador).
 
 ## Colocar no ar (Firebase)
 
