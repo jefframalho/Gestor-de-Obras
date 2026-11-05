@@ -659,7 +659,16 @@ function render() {
   document.querySelectorAll('.nav button, .bnav button').forEach(b => b.classList.toggle('on', b.dataset.a === pg || (b.dataset.a === '__mais' && !BNAV_PRIN.includes(pg))));
   const fn = {dashboard:pgDash, obras:pgObras, obra:pgObra, financeiro:pgFin, materiais:pgMat, equipe:pgEquipe, clientes:pgCli, orcamentos:pgOrc, config:pgCfg, admin:pgAdmin}[S.page] || pgDash;
   const m = $('#main'); if (!m) return;
-  const r = fn(); if (r && r.then) r.then(h => { m.innerHTML = aviso() + h; ligarCurva(); }); else { m.innerHTML = aviso() + r; ligarCurva(); }
+  let r; try { r = fn(); } catch (e) { console.error(e); m.innerHTML = erroTela(e); return; }
+  if (r && r.then) { m.innerHTML = '<div class="vazio">Carregando...</div>'; r.then(h => { m.innerHTML = aviso() + h; ligarCurva(); }).catch(e => { console.error(e); m.innerHTML = erroTela(e); }); }
+  else { m.innerHTML = aviso() + r; ligarCurva(); }
+}
+function erroTela(e) {
+  const code = (e && e.code) || '', perm = /permission/i.test(code + ' ' + (e && e.message));
+  return `<div class="card" style="max-width:560px"><h3>Não foi possível carregar esta tela</h3>
+    <p style="color:var(--mut)">${perm ? 'O banco de dados recusou o acesso. Confira se as <b>regras do Firestore</b> estão publicadas (Firestore → Regras → colar o firestore.rules → Publicar) e se o e-mail de administrador nas regras é o mesmo do login.' : 'Verifique a internet e tente de novo.'}</p>
+    <p style="font-size:12px;color:var(--mut);background:var(--soft);padding:8px 10px;border-radius:8px;word-break:break-word">Detalhe do erro: ${esc(code || '')} ${esc((e && e.message) || String(e))}</p>
+    <button class="btn pri" onclick="render()">Tentar de novo</button></div>`;
 }
 function aviso() {
   const e = S.empresa; if (!e || S.page === 'admin') return '';
@@ -897,7 +906,7 @@ async function pgAdmin() {
   if (!isAdmin()) return '';
   const es = (await API.listEmpresas()).sort((a, b) => (a.venceTs || 0) - (b.venceTs || 0));
   const ativas = es.filter(e => e.status === 'ativo' && !bloqueada(e)), teste = es.filter(e => e.status === 'teste' && !bloqueada(e)), bl = es.filter(bloqueada);
-  return topo('Assinantes', 'Construtoras que usam o Gestor de Obras')
+  return (!S.perfil ? `<div class="banner info"><span>Você entrou como <b>administrador</b> (sem construtora própria). Aqui você gerencia os assinantes.</span></div>` : '') + topo('Assinantes', 'Construtoras que usam o Gestor de Obras')
   + `<div class="kpis"><div class="kpi"><span>Construtoras</span><b>${es.length}</b></div><div class="kpi"><span>Pagantes ativas</span><b style="color:var(--ok)">${ativas.length}</b></div>
     <div class="kpi"><span>Em teste</span><b>${teste.length}</b></div><div class="kpi ${bl.length ? 'alert' : ''}"><span>Vencidas / bloqueadas</span><b>${bl.length}</b></div>
     <div class="kpi"><span>Receita mensal</span><b>${brl(ativas.length * PRECO_MENSAL)}</b></div></div>`
