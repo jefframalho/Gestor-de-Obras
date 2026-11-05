@@ -2323,10 +2323,27 @@ function telaLogin(aba = 'entrar') {
     catch (err) { toast(traduz(err)); }
   };
 }
+const jaUsado = e => (e && e.code === 'auth/email-already-in-use') || /já está cadastrado/i.test((e && e.message) || '');
+async function salvarConstrutora(uid, c) {
+  // cria o que faltar: perfil e construtora (também conserta cadastro que parou no meio)
+  let p = await API.getPerfil(uid);
+  if (!p) { p = {nome:c.nome, email:c.email, empresaId:uid, papel:'admin'}; await API.setPerfil(uid, p); }
+  if (p.empresaId === uid && !(await API.getEmpresa(uid)))
+    await API.setEmpresa(uid, {nome:c.empresa, telefone:c.tel, donoNome:c.nome, donoEmail:c.email, status:'teste', criadoEm:Date.now(), venceTs:Date.now() + DIAS_TESTE * 864e5});
+}
 async function criarConstrutora(c, exemplo) {
-  const uid = await API.criarConta(c.email, c.senha);
-  await API.setPerfil(uid, {nome:c.nome, email:c.email, empresaId:uid, papel:'admin'});
-  await API.setEmpresa(uid, {nome:c.empresa, telefone:c.tel, donoNome:c.nome, donoEmail:c.email, status:'teste', criadoEm:Date.now(), venceTs:Date.now() + DIAS_TESTE * 864e5});
+  let uid;
+  try { uid = await API.criarConta(c.email, c.senha); }
+  catch (e) {
+    if (!jaUsado(e)) throw e;
+    // e-mail já existe: se a senha confere, termina o cadastro que ficou pela metade
+    try { uid = await API.login(c.email, c.senha); }
+    catch (e2) { throw new Error('Este e-mail já tem cadastro. Use a mesma senha do primeiro cadastro para concluir, ou toque em "Entrar" → "Esqueci minha senha".'); }
+    const p = await API.getPerfil(uid);
+    if (p && (await API.getEmpresa(p.empresaId))) { toast('Você já tinha conta: entramos nela.'); return entrar(uid); }
+    toast('Concluindo o cadastro que tinha ficado pela metade...');
+  }
+  await salvarConstrutora(uid, c);
   await entrar(uid);
   if (exemplo) { await dadosExemplo(); render(); }
 }
@@ -2336,13 +2353,30 @@ async function entrar(uid) {
   S.perfil = await API.getPerfil(uid);
   if (!S.perfil) {
     if (isAdmin()) { S.page = 'admin'; S.empresa = null; return montarApp(); }
-    toast('Este usuário não está ligado a nenhuma construtora.'); await API.logout(); return telaLogin();
+    return telaCompletar(uid);
   }
   S.eid = S.perfil.empresaId; S.empresa = await API.getEmpresa(S.eid);
-  if (!S.empresa) { toast('Construtora não encontrada.'); await API.logout(); return telaLogin(); }
+  if (!S.empresa) {
+    if (S.perfil.empresaId === uid) return telaCompletar(uid);
+    toast('A construtora deste usuário foi removida. Fale com o responsável.'); await API.logout(); return telaLogin();
+  }
   if (bloqueada(S.empresa) && !isAdmin()) return telaBloqueio();
   await carregarTudo(); S.page = 'dashboard'; montarApp();
   setTimeout(checarAssinaturas, 1500);
+}
+function telaCompletar(uid) {
+  const em = API.emailAtual();
+  $('#root').innerHTML = `<div class="authR" style="min-height:100vh"><div class="card" style="max-width:440px;width:100%;padding:28px"><div class="logo" style="margin:0 0 14px;width:46px;height:46px">${ico('logo')}</div>
+    <h2 style="margin:0 0 6px">Falta pouco!</h2><p style="color:var(--mut);margin-top:0">O seu login <b>${esc(em)}</b> foi criado, mas o cadastro da construtora não terminou. Preencha para concluir e começar o teste grátis.</p>
+    <form id="fcomp"><div class="fld"><label>Nome da construtora</label><input id="k_emp" required></div>
+    <div class="f2"><div class="fld"><label>Seu nome</label><input id="k_nome" required></div><div class="fld"><label>WhatsApp</label><input id="k_tel" required></div></div>
+    <button class="btn pri" id="k_ok" style="width:100%;justify-content:center;padding:11px">Concluir cadastro</button></form>
+    <button class="btn" data-act="sair" style="width:100%;justify-content:center;margin-top:8px">Sair</button></div></div>`;
+  $('#fcomp').onsubmit = async e => {
+    e.preventDefault(); $('#k_ok').disabled = true;
+    try { await salvarConstrutora(uid, {empresa:$('#k_emp').value.trim(), nome:$('#k_nome').value.trim(), tel:$('#k_tel').value.trim(), email:em}); await entrar(uid); }
+    catch (err) { console.error(err); toast(traduz(err)); $('#k_ok').disabled = false; }
+  };
 }
 function telaBloqueio() {
   const e = S.empresa;
