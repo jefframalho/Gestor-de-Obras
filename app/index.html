@@ -44,6 +44,14 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,sy
 button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--pri2)}
 .hide{display:none!important}
+.orctool{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.orctool .sel{padding:6px 10px;font-size:13px}.orchint{font-size:12px;color:var(--mut)}
+.autoet{border-color:var(--ok)!important;background:var(--okSoft)!important}
+.catp{border:1px solid var(--pri);background:var(--priSoft);border-radius:12px;padding:12px;margin-bottom:10px}
+.cattabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.cattabs button{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:5px 11px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--ink)}.cattabs button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.fld .catlist label{display:flex;gap:8px;align-items:center;font-size:13.5px;font-weight:500;color:var(--ink);margin:0;text-transform:none;letter-spacing:0}
+.fld .catlist label input{width:auto;flex:none;accent-color:var(--pri)}.fld .catlist small{margin-left:auto;padding-left:8px}
+.fld .orctool select{width:auto;max-width:100%}
+.catlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px}.catlist label{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:7px 9px;cursor:pointer;font-size:13.5px}.catlist label span{flex:1}.catlist small{color:var(--mut);white-space:nowrap}
 .binst-login{width:100%;justify-content:center;margin-top:6px}
 .binst-side{display:block;width:100%;margin:0 0 12px;background:var(--pri);color:#fff;border:0;border-radius:8px;padding:8px;font-weight:700;cursor:pointer}
 .binst-side.hide{display:none}
@@ -977,8 +985,74 @@ async function pgAdmin() {
     }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--mut)">Nenhuma construtora cadastrada ainda.</td></tr>'}</tbody></table></div>`;
 }
 
+/* ===================== CATÁLOGO DE SERVIÇOS + RECONHECIMENTO AUTOMÁTICO ===================== */
+const CATALOGO = {
+  'Serviços preliminares': [['Limpeza do terreno','m²'],['Locação da obra (gabarito)','m²'],['Tapume de proteção','m'],['Barracão / canteiro de obras','vb'],['Ligação provisória de água e energia','vb'],['Demolição','m²']],
+  'Fundação': [['Escavação manual de valas','m³'],['Lastro de concreto magro','m³'],['Sapata em concreto armado','m³'],['Estaca broca','m'],['Viga baldrame','m'],['Impermeabilização do baldrame','m²'],['Aterro e compactação','m³']],
+  'Estrutura e ferragem': [['Armação / ferragem aço CA-50','kg'],['Vergalhão CA-50 10 mm','barra'],['Estribos CA-60','kg'],['Forma de madeira','m²'],['Concreto usinado fck 25','m³'],['Pilar em concreto armado','m³'],['Viga em concreto armado','m³'],['Laje pré-moldada','m²'],['Laje maciça','m²'],['Escoramento','m²']],
+  'Alvenaria': [['Alvenaria de tijolo cerâmico 8 furos','m²'],['Alvenaria de bloco de concreto','m²'],['Verga e contraverga','m'],['Encunhamento','m'],['Muro de divisa','m²']],
+  'Reboco e revestimento': [['Chapisco','m²'],['Emboço / massa única interna','m²'],['Reboco externo','m²'],['Contrapiso','m²'],['Revestimento cerâmico de parede','m²'],['Rejunte','m²']],
+  'Instalações elétricas': [['Ponto de tomada','un'],['Ponto de iluminação','un'],['Ponto de interruptor','un'],['Ponto de chuveiro','un'],['Ponto de ar-condicionado','un'],['Quadro de distribuição','un'],['Disjuntor','un'],['DPS e DR','un'],['Eletroduto corrugado','m'],['Cabo flexível 2,5 mm²','m'],['Cabo flexível 4 mm²','m'],['Cabo flexível 6 mm²','m'],['Padrão de entrada de energia','un'],['Aterramento','vb'],['Instalação de luminária','un']],
+  'Instalações hidráulicas': [['Ponto de água fria','un'],['Ponto de água quente','un'],['Ponto de esgoto','un'],['Tubulação PVC soldável','m'],['Tubulação de esgoto PVC','m'],['Registro de gaveta','un'],['Registro de pressão','un'],["Caixa d'água",'un'],['Caixa de inspeção / gordura','un'],['Fossa e sumidouro','vb'],['Ralo sifonado','un'],['Calha e condutor','m']],
+  'Cobertura': [['Madeiramento do telhado','m²'],['Telha cerâmica','m²'],['Telha de fibrocimento','m²'],['Cumeeira','m'],['Rufo','m'],['Impermeabilização de laje','m²'],['Forro de PVC / gesso','m²']],
+  'Piso': [['Piso cerâmico / porcelanato','m²'],['Rodapé','m'],['Soleira e peitoril de granito','m'],['Calçada','m²']],
+  'Esquadrias': [['Porta de madeira completa','un'],['Janela de alumínio','un'],['Porta de alumínio / vidro','un'],['Portão','un'],['Grade de proteção','m²']],
+  'Pintura': [['Massa corrida','m²'],['Selador','m²'],['Pintura acrílica interna','m²'],['Pintura externa / textura','m²'],['Pintura de esquadrias','m²']],
+  'Louças e metais': [['Vaso sanitário com caixa acoplada','un'],['Lavatório / cuba','un'],['Torneira','un'],['Chuveiro','un'],['Bancada de granito','m']],
+  'Limpeza e entrega': [['Limpeza final da obra','m²'],['Retirada de entulho (caçamba)','un']],
+  'Mão de obra': [['Diária de pedreiro','dia'],['Diária de ajudante','dia'],['Diária de eletricista','dia'],['Diária de encanador','dia'],['Empreitada de mão de obra','m²']]
+};
+const CAT_ICO = {'Serviços preliminares':'🚧','Fundação':'⛏️','Estrutura e ferragem':'🏗️','Alvenaria':'🧱','Reboco e revestimento':'🪣','Instalações elétricas':'⚡','Instalações hidráulicas':'🚰','Cobertura':'🏠','Piso':'🔲','Esquadrias':'🚪','Pintura':'🎨','Louças e metais':'🚿','Limpeza e entrega':'🧹','Mão de obra':'👷'};
+const MODELOS_OBRA = {
+  'Casa completa': ['Limpeza do terreno','Locação da obra (gabarito)','Escavação manual de valas','Sapata em concreto armado','Viga baldrame','Impermeabilização do baldrame','Armação / ferragem aço CA-50','Pilar em concreto armado','Laje pré-moldada','Alvenaria de tijolo cerâmico 8 furos','Verga e contraverga','Chapisco','Emboço / massa única interna','Reboco externo','Contrapiso','Ponto de tomada','Ponto de iluminação','Ponto de interruptor','Quadro de distribuição','Cabo flexível 2,5 mm²','Ponto de água fria','Ponto de esgoto',"Caixa d'água",'Madeiramento do telhado','Telha cerâmica','Piso cerâmico / porcelanato','Porta de madeira completa','Janela de alumínio','Massa corrida','Pintura acrílica interna','Pintura externa / textura','Vaso sanitário com caixa acoplada','Limpeza final da obra'],
+  'Reforma': ['Demolição','Retirada de entulho (caçamba)','Chapisco','Emboço / massa única interna','Contrapiso','Piso cerâmico / porcelanato','Revestimento cerâmico de parede','Ponto de tomada','Ponto de iluminação','Ponto de água fria','Massa corrida','Pintura acrílica interna','Limpeza final da obra'],
+  'Instalação elétrica': ['Padrão de entrada de energia','Quadro de distribuição','Disjuntor','DPS e DR','Eletroduto corrugado','Cabo flexível 2,5 mm²','Cabo flexível 4 mm²','Cabo flexível 6 mm²','Ponto de tomada','Ponto de iluminação','Ponto de interruptor','Ponto de chuveiro','Ponto de ar-condicionado','Aterramento','Instalação de luminária'],
+  'Hidráulica e esgoto': ['Ponto de água fria','Ponto de água quente','Ponto de esgoto','Tubulação PVC soldável','Tubulação de esgoto PVC','Registro de gaveta','Registro de pressão',"Caixa d'água",'Caixa de inspeção / gordura','Ralo sifonado','Fossa e sumidouro'],
+  'Telhado / cobertura': ['Madeiramento do telhado','Telha cerâmica','Cumeeira','Rufo','Calha e condutor','Forro de PVC / gesso'],
+  'Pintura': ['Massa corrida','Selador','Pintura acrílica interna','Pintura externa / textura','Pintura de esquadrias'],
+  'Muro': ['Escavação manual de valas','Sapata em concreto armado','Viga baldrame','Alvenaria de bloco de concreto','Chapisco','Reboco externo','Pintura externa / textura']
+};
+const CAT_ITEM = {}; Object.entries(CATALOGO).forEach(([c, l]) => l.forEach(([d, u]) => { CAT_ITEM[d] = {cat:c, un:u}; }));
+const normTxt = s => ' ' + String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+const REGRAS_SERV = [
+  ['Serviços preliminares', /(limpeza do terreno|locacao da obra| gabarito|tapume|barracao|canteiro de obra|ligacao provisoria|demoli|terraplen|roçagem|rocagem)/],
+  ['Fundação', /(baldrame|sapata|estaca|fundac|radier|bloco de coroamento|escavac| vala| valas|lastro|concreto magro|aterro|apiloament|compactac)/],
+  ['Instalações elétricas', /(eletric|tomada|interruptor|disjuntor|quadro de distrib|quadro de luz|eletroduto|conduite| fio | fios |fiacao| cabo | cabos |cabeamento|lampada|luminaria|iluminac| spot|refletor|energia|padrao de entrada|aterramento| dps | idr |tensao|ponto de luz|ar condicionado|ponto de chuveiro|chuveiro eletrico|sensor de presenca|campainha|interfone|cftv|camera|tomadas)/],
+  ['Instalações hidráulicas', /(hidraul| tubo| tubos|tubulac| cano| canos|encanament| pvc|registro|esgoto|agua fria|agua quente|caixa d agua|caixa dagua|reservatorio| ralo|sifao|fossa|sumidouro|caixa de gordura|caixa de inspec|calha|condutor|valvula|descarga| boia|bomba d agua|hidrometro|vazamento)/],
+  ['Louças e metais', /(vaso sanit| bacia|lavatorio| cuba|torneira|chuveiro|bancada|loucas|metais| ducha|mictorio)/],
+  ['Reboco e revestimento', /(reboco|chapisco|emboco|massa unica|contrapiso|revestimento|azulejo|rejunt|argamassa|regulariza)/],
+  ['Cobertura', /(telha|telhad|madeiramento|cumeeira| rufo|cobertur|impermeabiliz|manta asfalt| forro)/],
+  ['Alvenaria', /(tijolo| bloco|alvenar|parede|\ verga | vergas |contraverga|encunhament| muro|cobogo|elemento vazado)/],
+  ['Estrutura e ferragem', /(ferro|ferrag|vergalh| aco | ca 50| ca 60|ca50|ca60|estribo|armac|tela soldada|trelica|pilar| viga| vigas| laje|concreto|forma de madeira|formas| escora|concretag| fck)/],
+  ['Pintura', /(pintura|pintar| tinta|massa corrida|selador|textura| lixa|lixamento|verniz|esmalte|grafiato)/],
+  ['Piso', /( piso|porcelanato|ceramica|rodape|soleira|peitoril|calcada|granito|marmore|laminado|vinilico)/],
+  ['Esquadrias', /( porta|janela|portao| grade|esquadri| vidro|blindex|basculante|fechadura|dobradica)/],
+  ['Limpeza e entrega', /(limpeza|entulho|cacamba)/],
+  ['Mão de obra', /(diaria|mao de obra|empreitada|pedreiro|ajudante|servente)/]
+];
+function classificaServico(txt) {
+  const t = normTxt(txt); if (t.trim().length < 3) return '';
+  for (const [d, it] of Object.entries(CAT_ITEM)) if (normTxt(d) === t) return it.cat;
+  for (const [cat, re] of REGRAS_SERV) if (re.test(t)) return cat;
+  return '';
+}
+const KW_ETAPA = {'Serviços preliminares':/prelimin|canteiro|demoli|terreno/, 'Fundação':/funda|baldrame|sapata|estaca|terrapl/, 'Estrutura e ferragem':/estrutur|ferrag|laje|pilar|viga|concret/,
+  'Alvenaria':/alvenar|parede|tijolo|bloco|muro/, 'Reboco e revestimento':/reboco|revest|contrapiso|emboco|chapisco/, 'Instalações elétricas':/eletric|energia|fiacao/,
+  'Instalações hidráulicas':/hidraul|agua|esgoto|tubula|encanam/, 'Cobertura':/cobert|telhad|telha|impermeab|forro/, 'Piso':/piso|revest/, 'Esquadrias':/esquadr|porta|janela|vidro|serralh/,
+  'Pintura':/pintur|acabamento/, 'Louças e metais':/louca|metais|acabamento/, 'Limpeza e entrega':/limpeza|entrega/, 'Mão de obra':/mao de obra/};
+function etapaPorCategoria(cat, ets) { const re = KW_ETAPA[cat]; if (!re) return null; return ets.find(e => re.test(normTxt(e.nome))) || null; }
+const precoLembrado = d => ((S.empresa && S.empresa.precosServ) || {})[normTxt(d).trim()];
+async function lembrarPrecos(itens) {
+  const m = {...((S.empresa && S.empresa.precosServ) || {})}; let mud = false;
+  itens.forEach(i => { const k = normTxt(i.descricao).trim(); if (k && +i.valor > 0 && m[k] !== +i.valor) { m[k] = +i.valor; mud = true; } });
+  if (!mud) return; const ks = Object.keys(m); if (ks.length > 500) ks.slice(0, ks.length - 500).forEach(k => delete m[k]);
+  try { await API.setEmpresa(S.eid, {precosServ:m}); S.empresa.precosServ = m; } catch (e) { /* sem permissão para gravar: ignora */ }
+}
+const DL_SERV = () => `<datalist id="dl_serv">${Object.keys(CAT_ITEM).map(d => `<option value="${esc(d)}">`).join('')}</datalist>`;
+
 /* ===================== ORÇAMENTOS ===================== */
-const ETAPAS_PADRAO = ['Serviços preliminares','Fundação','Estrutura','Alvenaria','Cobertura','Instalações elétricas','Instalações hidráulicas','Reboco e contrapiso','Piso e revestimento','Esquadrias','Pintura','Louças e metais','Acabamento','Limpeza final','Mão de obra','Projeto e taxas'];
+const ETAPAS_PADRAO_OLD = ['Serviços preliminares','Fundação','Estrutura','Alvenaria','Cobertura','Instalações elétricas','Instalações hidráulicas','Reboco e contrapiso','Piso e revestimento','Esquadrias','Pintura','Louças e metais','Acabamento','Limpeza final','Mão de obra','Projeto e taxas'];
+const ETAPAS_PADRAO = [...new Set([...Object.keys(CATALOGO), ...ETAPAS_PADRAO_OLD])];
 const STATUS_ORC = ['Rascunho','Enviado','Aprovado','Recusado'];
 const badgeOrc = s => `<span class="badge ${({Enviado:'b-info', Aprovado:'b-ok', Recusado:'b-bad'})[s] || 'b-mut'}">${esc(s || 'Rascunho')}</span>`;
 function totaisOrc(o) {
@@ -1023,7 +1097,7 @@ function editorOrc(rec) {
   if (!o.itens || !o.itens.length) o.itens = [{etapa:'', descricao:'', unidade:'un', qtd:1, valor:''}];
   const ro = o.status === 'Aprovado';
   modal(`<h3>${o.id ? 'Orçamento ' + esc(o.numero) : 'Novo orçamento — ' + esc(o.numero)}</h3>
-  <datalist id="dl_etapas">${ETAPAS_PADRAO.map(e => `<option value="${e}">`).join('')}</datalist>
+  <datalist id="dl_etapas">${ETAPAS_PADRAO.map(e => `<option value="${e}">`).join('')}</datalist>${DL_SERV()}
   <div class="f2">
     <div class="fld"><label>Cliente cadastrado</label><select id="o_cli"><option value="">— Cliente novo / não cadastrado —</option>${S.data.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome)).map(c => `<option value="${c.id}" ${c.id === o.clienteId ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></div>
     <div class="fld" id="o_novo"><label>Nome e WhatsApp do cliente</label><div class="row" style="flex-wrap:nowrap"><input id="o_cnome" placeholder="Nome" value="${esc(o.clienteNome)}"><input id="o_ctel" placeholder="WhatsApp" value="${esc(o.clienteTel)}" style="max-width:150px"></div></div>
@@ -1035,6 +1109,9 @@ function editorOrc(rec) {
     <div class="fld"><label>Status</label><select id="o_st">${STATUS_ORC.map(s => `<option ${s === (o.status || 'Rascunho') ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
   </div>
   <div class="fld"><label>Itens do orçamento <small style="font-weight:400">(valor unitário = seu custo; o BDI/margem é somado no preço do cliente)</small></label>
+  <div class="orctool"><button type="button" class="btn sm pri" id="o_catbtn">📚 Catálogo de serviços</button><select id="o_modelo" class="sel"><option value="">⚡ Carregar modelo por tipo de obra…</option>${Object.keys(MODELOS_OBRA).map(m => `<option>${m}</option>`).join('')}</select>
+    <span class="orchint">Digite o serviço: a <b>etapa</b> (elétrica, hidráulica, reboco…) é preenchida sozinha.</span></div>
+  <div id="o_cat" class="catp hide"></div>
   <div class="tw"><table class="itens"><thead><tr><th>Etapa</th><th>Descrição</th><th>Un.</th><th class="r">Qtd.</th><th class="r">Custo unit.</th><th class="r">Total</th><th></th></tr></thead><tbody id="o_itens"></tbody></table></div>
   <div class="row" style="margin-top:8px"><button type="button" class="btn sm" id="o_add">+ Item</button><button type="button" class="btn sm" id="o_addEt">+ Etapa nova</button></div></div>
   <div class="f2"><div class="fld"><label>BDI / margem (%)</label><input type="number" step="0.1" id="o_bdi" value="${esc(o.bdiPct)}"></div>
@@ -1045,9 +1122,10 @@ function editorOrc(rec) {
   <div class="mact">${o.id ? '<button type="button" class="btn danger" id="o_del">Excluir</button>' : ''}<span style="flex:1"></span>
     <button type="button" class="btn" onclick="fecharModal()">Cancelar</button><button type="button" class="btn" id="o_save">Salvar</button><button type="button" class="btn pri" id="o_pdf">Salvar e gerar PDF</button></div>`, 'wide');
   const linhas = () => {
-    $('#o_itens').innerHTML = o.itens.map((i, k) => `<tr><td><input list="dl_etapas" data-k="etapa" data-i="${k}" value="${esc(i.etapa)}" placeholder="Etapa" style="width:165px"></td>
-      <td><input data-k="descricao" data-i="${k}" value="${esc(i.descricao)}" placeholder="Descrição do serviço/material" style="min-width:200px"></td>
-      <td><select data-k="unidade" data-i="${k}" style="width:78px">${['vb', 'm²', ...OPC.unid.filter(u => u !== 'm²')].map(u => `<option ${u === i.unidade ? 'selected' : ''}>${u}</option>`).join('')}</select></td>
+    const UNS = [...new Set(['vb', 'm²', 'm', 'm³', 'un', 'kg', 'dia', ...OPC.unid])];
+    $('#o_itens').innerHTML = o.itens.map((i, k) => `<tr><td><input list="dl_etapas" data-k="etapa" data-i="${k}" value="${esc(i.etapa)}" placeholder="Etapa" style="width:175px" class="${i._auto ? 'autoet' : ''}" title="${i._auto ? 'Etapa reconhecida automaticamente' : ''}"></td>
+      <td><input list="dl_serv" data-k="descricao" data-i="${k}" value="${esc(i.descricao)}" placeholder="Ex.: ponto de tomada, reboco, tubulação…" style="min-width:220px"></td>
+      <td><select data-k="unidade" data-i="${k}" style="width:78px">${(UNS.includes(i.unidade) || !i.unidade ? UNS : [i.unidade, ...UNS]).map(u => `<option ${u === i.unidade ? 'selected' : ''}>${u}</option>`).join('')}</select></td>
       <td><input type="number" step="any" data-k="qtd" data-i="${k}" value="${esc(i.qtd)}" style="width:70px;text-align:right"></td>
       <td><input type="number" step="0.01" data-k="valor" data-i="${k}" value="${esc(i.valor)}" style="width:100px;text-align:right"></td>
       <td class="r" id="o_tl${k}" style="white-space:nowrap">${brl((+i.qtd || 0) * (+i.valor || 0))}</td>
@@ -1060,11 +1138,47 @@ function editorOrc(rec) {
     $('#o_tot').innerHTML = `<div><span>Seu custo</span><b>${brl(t.custo)}</b></div><div><span>Preço ao cliente${+o.bdiPct ? ` (+${num(o.bdiPct)}%)` : ''}</span><b>${brl(t.preco)}</b></div>${t.desc ? `<div><span>Desconto</span><b>− ${brl(t.desc)}</b></div>` : ''}<div class="tt"><span>Total do orçamento</span><b>${brl(t.total)}</b></div><div><span>Lucro estimado</span><b style="color:${t.lucro >= 0 ? 'var(--ok)' : 'var(--bad)'}">${brl(t.lucro)}${t.total ? ` (${Math.round(t.lucro / t.total * 100)}%)` : ''}</b></div>`;
   };
   const tb = $('#o_itens');
-  tb.addEventListener('input', e => { const el = e.target, k = el.dataset.k, i = +el.dataset.i; if (!k) return; o.itens[i][k] = ['qtd','valor'].includes(k) ? (el.value === '' ? '' : +el.value) : el.value; if (['qtd','valor'].includes(k)) { $('#o_tl' + i).textContent = brl((+o.itens[i].qtd || 0) * (+o.itens[i].valor || 0)); tot(); } });
+  const autoItem = (i, completo) => {
+    const it = o.itens[i], row = tb.querySelectorAll('tr')[i]; if (!row) return;
+    const ci = CAT_ITEM[it.descricao];
+    const cat = ci ? ci.cat : classificaServico(it.descricao);
+    if (cat && (!it.etapa || it._auto)) { it.etapa = cat; it._auto = true; const ie = row.querySelector('[data-k="etapa"]'); ie.value = cat; ie.classList.add('autoet'); }
+    if (completo && ci) {
+      if (!it.unidade || it.unidade === 'un') { it.unidade = ci.un; const su = row.querySelector('[data-k="unidade"]'); if (![...su.options].some(op => op.value === ci.un)) su.add(new Option(ci.un, ci.un)); su.value = ci.un; }
+    }
+    if (completo && (it.valor === '' || it.valor == null)) { const pv = precoLembrado(it.descricao); if (pv) { it.valor = pv; row.querySelector('[data-k="valor"]').value = pv; $('#o_tl' + i).textContent = brl((+it.qtd || 0) * pv); tot(); } }
+  };
+  tb.addEventListener('input', e => { const el = e.target, k = el.dataset.k, i = +el.dataset.i; if (!k) return; o.itens[i][k] = ['qtd','valor'].includes(k) ? (el.value === '' ? '' : +el.value) : el.value;
+    if (k === 'etapa') { o.itens[i]._auto = false; el.classList.remove('autoet'); }
+    if (k === 'descricao') autoItem(i, !!CAT_ITEM[el.value]);
+    if (['qtd','valor'].includes(k)) { $('#o_tl' + i).textContent = brl((+o.itens[i].qtd || 0) * (+o.itens[i].valor || 0)); tot(); } });
+  tb.addEventListener('focusout', e => { const el = e.target; if (el.dataset && el.dataset.k === 'descricao') autoItem(+el.dataset.i, true); });
   tb.addEventListener('change', e => { const el = e.target; if (el.tagName === 'SELECT') o.itens[+el.dataset.i].unidade = el.value; });
   tb.addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (!b) return; o.itens.splice(+b.dataset.rm, 1); if (!o.itens.length) o.itens.push({etapa:'', descricao:'', unidade:'un', qtd:1, valor:''}); linhas(); });
-  $('#o_add').onclick = () => { const ult = o.itens[o.itens.length - 1]; o.itens.push({etapa:ult ? ult.etapa : '', descricao:'', unidade:'un', qtd:1, valor:''}); linhas(); tb.querySelector(`tr:last-child [data-k="descricao"]`).focus(); };
+  $('#o_add').onclick = () => { const ult = o.itens[o.itens.length - 1]; o.itens.push({etapa:ult ? ult.etapa : '', _auto:!!(ult && ult._auto), descricao:'', unidade:'un', qtd:1, valor:''}); linhas(); tb.querySelector(`tr:last-child [data-k="descricao"]`).focus(); };
   $('#o_addEt').onclick = () => { o.itens.push({etapa:'', descricao:'', unidade:'un', qtd:1, valor:''}); linhas(); tb.querySelector(`tr:last-child [data-k="etapa"]`).focus(); };
+  const addCatalogo = descs => {
+    o.itens = o.itens.filter(i => (i.descricao || '').trim() || +i.valor);
+    let n = 0; descs.forEach(d => { const ci = CAT_ITEM[d]; if (!ci) return; o.itens.push({etapa:ci.cat, descricao:d, unidade:ci.un, qtd:1, valor:precoLembrado(d) || '', _auto:true}); n++; });
+    if (!o.itens.length) o.itens.push({etapa:'', descricao:'', unidade:'un', qtd:1, valor:''});
+    linhas(); return n;
+  };
+  let catTab = Object.keys(CATALOGO)[0]; const catSel = new Set();
+  const catDraw = () => {
+    $('#o_cat').innerHTML = `<div class="cattabs">${Object.keys(CATALOGO).map(c => `<button type="button" class="${c === catTab ? 'on' : ''}" data-ctab="${esc(c)}">${CAT_ICO[c] || ''} ${esc(c)}</button>`).join('')}</div>
+      <div class="catlist">${CATALOGO[catTab].map(([d, u]) => `<label><input type="checkbox" data-csel="${esc(d)}" ${catSel.has(d) ? 'checked' : ''}><span>${esc(d)}</span><small>${u}${precoLembrado(d) ? ' · ' + brl(precoLembrado(d)) : ''}</small></label>`).join('')}</div>
+      <div class="row" style="margin-top:10px"><button type="button" class="btn sm pri" id="o_catadd" ${catSel.size ? '' : 'disabled'}>Adicionar ${catSel.size || ''} serviço(s)</button><button type="button" class="btn sm" data-call="1">Marcar todos desta aba</button><button type="button" class="btn sm" id="o_catfechar">Fechar</button></div>`;
+  };
+  $('#o_catbtn').onclick = () => { const p = $('#o_cat'); p.classList.toggle('hide'); if (!p.classList.contains('hide')) catDraw(); };
+  $('#o_cat').addEventListener('click', e => {
+    const t = e.target.closest('[data-ctab],[data-call],#o_catadd,#o_catfechar'); if (!t) return;
+    if (t.dataset.ctab) { catTab = t.dataset.ctab; catDraw(); }
+    else if (t.dataset.call) { CATALOGO[catTab].forEach(([d]) => catSel.add(d)); catDraw(); }
+    else if (t.id === 'o_catfechar') $('#o_cat').classList.add('hide');
+    else { const n = addCatalogo([...catSel]); catSel.clear(); $('#o_cat').classList.add('hide'); toast(n + ' serviço(s) adicionados. Preencha quantidade e custo.'); }
+  });
+  $('#o_cat').addEventListener('change', e => { const c = e.target.dataset.csel; if (!c) return; if (e.target.checked) catSel.add(c); else catSel.delete(c); const b = $('#o_catadd'); b.disabled = !catSel.size; b.textContent = `Adicionar ${catSel.size || ''} serviço(s)`; });
+  $('#o_modelo').onchange = e => { const m = e.target.value; if (!m) return; const n = addCatalogo(MODELOS_OBRA[m]); e.target.value = ''; toast(`Modelo "${m}": ${n} serviços adicionados. Agora é só ajustar quantidades e custos.`); };
   $('#o_bdi').oninput = tot; $('#o_desc').oninput = tot;
   const cliVis = () => { $('#o_novo').style.visibility = $('#o_cli').value ? 'hidden' : 'visible'; };
   $('#o_cli').onchange = cliVis; cliVis(); linhas();
@@ -1079,7 +1193,7 @@ function editorOrc(rec) {
     if (!o.itens.length) { toast('Adicione pelo menos um item'); return null; }
     return o;
   };
-  const gravar = async pdf => { const x = coletar(); if (!x) return; await salvar('orcamentos', x); fecharModal(); render(); toast('Orçamento salvo'); if (pdf) abrirPdfOrc(x); };
+  const gravar = async pdf => { const x = coletar(); if (!x) return; x.itens = x.itens.map(i => { const c = {...i}; delete c._auto; return c; }); await salvar('orcamentos', x); lembrarPrecos(x.itens); fecharModal(); render(); toast('Orçamento salvo'); if (pdf) abrirPdfOrc(x); };
   $('#o_save').onclick = () => gravar(false);
   $('#o_pdf').onclick = () => gravar(true);
   if (o.id) $('#o_del').onclick = async () => { if (!confirm('Excluir este orçamento?')) return; await excluir('orcamentos', o.id); fecharModal(); render(); toast('Excluído'); };
@@ -1757,7 +1871,7 @@ function editorDiario(rec) {
   const travado = !!d.assinaturaResp;
   const opt = (arr, v) => arr.map(x => `<option ${x === v ? 'selected' : ''}>${x}</option>`).join('');
   modal(`<h3>${novo ? 'Novo registro' : 'RDO nº ' + numRDO(d)} — diário de obra</h3>
-    ${travado ? '<p class="demo">Este RDO já foi assinado pelo responsável. Para alterar, remova a assinatura primeiro.</p>' : ''}
+    ${DL_SERV()}${travado ? '<p class="demo">Este RDO já foi assinado pelo responsável. Para alterar, remova a assinatura primeiro.</p>' : ''}
     <div class="f2"><div class="fld"><label>Obra *</label><select id="r_obra" ${novo ? '' : 'disabled'}>${S.data.obras.map(o => `<option value="${o.id}" ${o.id === d.obraId ? 'selected' : ''}>${esc(o.nome)}</option>`).join('')}</select></div>
       <div class="fld"><label>Data *</label><input type="date" id="r_data" value="${esc(d.data)}"></div>
       <div class="fld"><label>Clima — manhã</label><select id="r_cm">${opt(CLIMAS, d.climaManha)}</select></div>
@@ -1790,7 +1904,7 @@ function editorDiario(rec) {
   const servicos = () => {
     const ets = S.data.etapas.filter(e => e.obraId === d.obraId);
     $('#r_serv').innerHTML = d.servicos.map((s, k) => { const e = achar('etapas', s.etapaId); return `<div class="rrow"><select data-sk="${k}" data-sf="etapaId"><option value="">— Sem etapa —</option>${ets.map(e => `<option value="${e.id}" ${e.id === s.etapaId ? 'selected' : ''}>${esc(e.nome)}</option>`).join('')}</select>
-      <input data-sk="${k}" data-sf="descricao" value="${esc(s.descricao)}" placeholder="O que foi feito" style="flex:2">
+      <input list="dl_serv" data-sk="${k}" data-sf="descricao" value="${esc(s.descricao)}" placeholder="O que foi feito (ex.: passagem de eletroduto)" style="flex:2">
       <span class="rpct">${s.etapaId ? `<input type="number" min="0" max="100" data-sk="${k}" data-sf="pct" value="${esc(s.pct ?? (e ? e.percentual : ''))}" style="width:70px">%` : ''}</span><button type="button" class="btn sm danger" data-srm="${k}">×</button></div>`; }).join('') || '<p style="color:var(--mut);margin:4px 0">Nenhum serviço listado.</p>';
   };
   const fotos = () => { $('#r_fotos').innerHTML = d.fotos.map((f, k) => `<div class="rft"><img src="${f.thumb}" data-fver="${k}" alt=""><button type="button" data-frm="${k}" title="Remover">×</button></div>`).join(''); };
@@ -1801,7 +1915,7 @@ function editorDiario(rec) {
     if (el.dataset.pres) { const id = el.dataset.pres; if (el.checked) d.presentes.push({fid:id, dias:'1'}); else d.presentes = d.presentes.filter(p => p.fid !== id); const s = M.querySelector(`[data-pdias="${id}"]`); if (s) s.disabled = !el.checked; resumo(); }
     if (el.dataset.pdias) { const p = d.presentes.find(p => p.fid === el.dataset.pdias); if (p) p.dias = el.value; }
     if (el.dataset.tf === 'funcao') { d.terceiros[+el.dataset.tk].funcao = el.value; resumo(); }
-    if (el.dataset.sf === 'etapaId') { const s = d.servicos[+el.dataset.sk]; s.etapaId = el.value; delete s.pct; servicos(); }
+    if (el.dataset.sf === 'etapaId') { const s = d.servicos[+el.dataset.sk]; s.etapaId = el.value; s._auto = false; delete s.pct; servicos(); }
     if (el.id === 'r_obra') { d.obraId = el.value; d.presentes = S.data.funcionarios.filter(f => f.ativo !== false && f.obraId === d.obraId).map(f => ({fid:f.id, dias:'1'})); d.servicos.forEach(s => { s.etapaId = ''; delete s.pct; }); equipe(); servicos(); }
     if (el.id === 'r_fin' && el.files.length) {
       const fs2 = [...el.files].slice(0, 12 - d.fotos.length); if (el.files.length > fs2.length) toast('Máximo de 12 fotos por registro.');
@@ -1813,6 +1927,17 @@ function editorDiario(rec) {
     const el = e.target;
     if (el.dataset.tf && el.dataset.tf !== 'funcao') { d.terceiros[+el.dataset.tk][el.dataset.tf] = el.dataset.tf === 'qtd' ? +el.value || '' : el.value; resumo(); }
     if (el.dataset.sf && el.dataset.sf !== 'etapaId') d.servicos[+el.dataset.sk][el.dataset.sf] = el.dataset.sf === 'pct' ? (el.value === '' ? '' : Math.min(100, Math.max(0, +el.value))) : el.value;
+    if (el.dataset.sf === 'descricao') {
+      const k = +el.dataset.sk, sv = d.servicos[k];
+      if (!sv.etapaId || sv._auto) {
+        const ets = S.data.etapas.filter(x => x.obraId === d.obraId), et = etapaPorCategoria(classificaServico(el.value), ets);
+        if (et && et.id !== sv.etapaId) {
+          sv.etapaId = et.id; sv._auto = true; delete sv.pct;
+          const row = el.closest('.rrow'), sel = row.querySelector('[data-sf="etapaId"]'); sel.value = et.id; sel.classList.add('autoet');
+          row.querySelector('.rpct').innerHTML = `<input type="number" min="0" max="100" data-sk="${k}" data-sf="pct" value="${esc(et.percentual)}" style="width:70px">%`;
+        }
+      }
+    }
   });
   M.addEventListener('click', e => {
     const t = e.target.closest('[data-trm],[data-srm],[data-frm],[data-fver]'); if (!t) return;
@@ -1826,7 +1951,7 @@ function editorDiario(rec) {
   if ($('#r_ok')) $('#r_ok').onclick = async () => {
     Object.assign(d, {obraId:$('#r_obra').value, data:$('#r_data').value, climaManha:$('#r_cm').value, climaTarde:$('#r_ct').value, expediente:$('#r_exp').value, responsavel:$('#r_resp').value.trim(),
       texto:$('#r_txt').value.trim(), ocorrencias:$('#r_oc').value.trim(), visitas:$('#r_vis').value.trim(), equipamentos:$('#r_eqp').value.trim(), lancarDiarias:$('#r_lanc').checked});
-    d.servicos = d.servicos.filter(s => (s.descricao || '').trim() || s.etapaId);
+    d.servicos = d.servicos.filter(s => (s.descricao || '').trim() || s.etapaId).map(s => { const c = {...s}; delete c._auto; return c; });
     d.terceiros = d.terceiros.filter(t => +t.qtd > 0);
     if (!d.obraId || !d.data) return toast('Escolha a obra e a data.');
     if (!d.texto && !d.servicos.length) return toast('Liste pelo menos um serviço ou escreva uma observação.');
