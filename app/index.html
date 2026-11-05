@@ -6,6 +6,12 @@
 <title>Gestor de Obras</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="../assets/icon-192.png" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gestor Obras">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="Gestor de Obras — sistema de gestão para construtoras: obras, cronograma, diário de obra, financeiro, materiais, equipe e clientes.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -38,6 +44,10 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,sy
 button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--pri2)}
 .hide{display:none!important}
+.binst-login{width:100%;justify-content:center;margin-top:6px}
+.binst-side{display:block;width:100%;margin:0 0 12px;background:var(--pri);color:#fff;border:0;border-radius:8px;padding:8px;font-weight:700;cursor:pointer}
+.binst-side.hide{display:none}
+.passos-inst{padding-left:20px;display:grid;gap:8px;margin:12px 0}.kbd{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:0 6px;background:var(--soft);font-weight:700}
 .endb{display:grid;gap:8px}.endb input,.endb select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
 .endb .ecep{display:flex;gap:10px;align-items:center}.endb .ecep input{max-width:150px;font-weight:600;letter-spacing:.03em}
 .emsg{font-size:12px;color:var(--mut)}.emsg.ok{color:var(--ok)}.emsg.bad{color:var(--bad)}
@@ -696,7 +706,7 @@ function montarApp() {
   const bnav = prin.map(p => `<button data-act="nav" data-a="${p[0]}">${ico(p[2])}<span>${p[1]}</span></button>`).join('') + `<button data-act="maisMenu" data-a="__mais">${ico('dash')}<span>Mais</span></button>`;
   BNAV_PRIN = prin.map(p => p[0]); MAIS_LIST = disp;
   $('#root').innerHTML = `<div class="app"><aside class="side"><div class="brand"><div class="logo">${ico('logo')}</div><div>Gestor de Obras<small>${esc(S.empresa ? S.empresa.nome : 'Administração')}</small></div><button class="msair" data-act="sair">Sair</button></div>
-    <nav class="nav">${navs}</nav><div class="sidefoot"><b>${esc(S.perfil ? S.perfil.nome : S.email)}</b>${esc(S.perfil ? PAPEIS[S.perfil.papel] : 'Administrador do sistema')}<button data-act="sair">Sair</button></div></aside>
+    <nav class="nav">${navs}</nav><div class="sidefoot">${btnInstalar('binst-side')}<b>${esc(S.perfil ? S.perfil.nome : S.email)}</b>${esc(S.perfil ? PAPEIS[S.perfil.papel] : 'Administrador do sistema')}<button data-act="sair">Sair</button></div></aside>
     <main class="main" id="main"></main></div><nav class="bnav">${bnav}</nav>`;
   render();
 }
@@ -2173,7 +2183,8 @@ function gerarRelatorio(oid, mes, interna, nomeMesTxt) {
 /* ===================== AÇÕES ===================== */
 const ACT = {
   nav:a => { fecharModal(); S.page = a; S.obraId = null; window.scrollTo(0, 0); render(); },
-  maisMenu:() => modal(`<h3>Menu</h3><div class="mais">${MAIS_LIST.map(p => `<button class="${p[0] === S.page ? 'on' : ''}" data-act="nav" data-a="${p[0]}">${ico(p[2])}${p[1]}</button>`).join('')}<button data-act="sair">${ico('sair')}Sair</button></div>
+  instalar:() => instalarApp(),
+  maisMenu:() => modal(`<h3>Menu</h3><div class="mais">${MAIS_LIST.map(p => `<button class="${p[0] === S.page ? 'on' : ''}" data-act="nav" data-a="${p[0]}">${ico(p[2])}${p[1]}</button>`).join('')}${APP_INSTALADO() ? '' : `<button data-act="instalar">${ico('dash')}Baixar app</button>`}<button data-act="sair">${ico('sair')}Sair</button></div>
     <p style="color:var(--mut);font-size:12.5px;margin:14px 0 0;text-align:center">${esc(S.perfil ? S.perfil.nome : S.email)} · ${esc(S.perfil ? PAPEIS[S.perfil.papel] : 'Administrador')}</p>`),
   obra:a => { S.page = 'obra'; S.obraId = a; S.tab.obra = 'etapas'; window.scrollTo(0, 0); render(); },
   tab:(a, b) => { S.tab[a] = b; render(); },
@@ -2345,7 +2356,7 @@ function telaLogin(aba = 'entrar') {
     ${aba === 'entrar' ? `<h2>Entrar</h2><p style="color:var(--mut);margin-top:4px">Acesse a sua construtora.</p><form id="fl">
       <div class="fld"><label>E-mail</label><input id="l_email" type="email" required autocomplete="email"></div>
       <div class="fld"><label>Senha</label><input id="l_senha" type="password" required autocomplete="current-password"></div>
-      <button class="btn pri" id="l_ok">Entrar</button></form><p style="text-align:center"><a href="#" id="l_esq">Esqueci minha senha</a></p>`
+      <button class="btn pri" id="l_ok">Entrar</button></form><p style="text-align:center"><a href="#" id="l_esq">Esqueci minha senha</a></p>${btnInstalar('btn binst-login')}`
     : `<h2>Teste grátis por ${DIAS_TESTE} dias</h2><p style="color:var(--mut);margin-top:4px">Depois, ${brl(PRECO_MENSAL)}/mês. Sem fidelidade.</p><form id="fc">
       <div class="fld"><label>Nome da construtora</label><input id="c_emp" required></div>
       <div class="f2"><div class="fld"><label>Seu nome</label><input id="c_nome" required></div><div class="fld"><label>WhatsApp</label><input id="c_tel" required></div></div>
@@ -2529,8 +2540,25 @@ async function dadosExemplo() {
 }
 
 /* ===================== INÍCIO ===================== */
+/* ===================== APP INSTALÁVEL ===================== */
+let PROMPT_INST = null;
+const APP_INSTALADO = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); PROMPT_INST = e; document.querySelectorAll('.binst').forEach(b => b.classList.remove('hide')); });
+window.addEventListener('appinstalled', () => { PROMPT_INST = null; document.querySelectorAll('.binst').forEach(b => b.classList.add('hide')); toast('App instalado! Procure o ícone Gestor Obras na sua tela.'); });
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+const btnInstalar = (cls = 'btn') => APP_INSTALADO() ? '' : `<button class="${cls} binst ${PROMPT_INST || IOS ? '' : 'hide'}" data-act="instalar" type="button">📲 Baixar o app</button>`;
+async function instalarApp() {
+  if (APP_INSTALADO()) return toast('Você já está usando o app.');
+  if (PROMPT_INST) { PROMPT_INST.prompt(); const r = await PROMPT_INST.userChoice; PROMPT_INST = null; if (r.outcome !== 'accepted') toast('Instalação cancelada.'); return; }
+  const passo = IOS
+    ? `<ol class="passos-inst"><li>Toque no botão <b>Compartilhar</b> <span class="kbd">⬆︎</span> na barra do Safari.</li><li>Role e toque em <b>Adicionar à Tela de Início</b>.</li><li>Toque em <b>Adicionar</b>. Pronto: o ícone <b>Gestor Obras</b> aparece na sua tela.</li></ol><p style="color:var(--mut);font-size:12.5px">No iPhone, abra este site pelo <b>Safari</b> para instalar.</p>`
+    : `<ol class="passos-inst"><li>Toque no menu <span class="kbd">⋮</span> do navegador (canto de cima).</li><li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li><li>Confirme. O ícone <b>Gestor Obras</b> aparece na sua tela.</li></ol><p style="color:var(--mut);font-size:12.5px">Use o <b>Chrome</b> (Android) ou o <b>Chrome/Edge</b> (computador).</p>`;
+  modal(`<h3>📲 Instalar o Gestor de Obras</h3><p style="margin-top:0">Fica com ícone na tela inicial e abre em tela cheia, como um aplicativo. As atualizações chegam sozinhas.</p>${passo}<div class="mact"><span style="flex:1"></span><button class="btn pri" onclick="fecharModal()">Entendi</button></div>`);
+}
 (async () => {
   const q = new URLSearchParams(location.search);
+  if (q.get('instalar')) setTimeout(instalarApp, 900);
   if (q.get('portal')) return renderPortal(q.get('portal'));
   if (q.get('assinar')) return renderAssinar(q.get('assinar'));
   try { const uid = await API.uidAtual(); if (uid) await entrar(uid); else telaLogin(q.get('criar') ? 'criar' : 'entrar'); }
