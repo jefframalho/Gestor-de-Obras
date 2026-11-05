@@ -38,6 +38,10 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,sy
 button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--pri2)}
 .hide{display:none!important}
+.endb{display:grid;gap:8px}.endb input,.endb select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
+.endb .ecep{display:flex;gap:10px;align-items:center}.endb .ecep input{max-width:150px;font-weight:600;letter-spacing:.03em}
+.emsg{font-size:12px;color:var(--mut)}.emsg.ok{color:var(--ok)}.emsg.bad{color:var(--bad)}
+.endb .erow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.endb .erow.r2{grid-template-columns:1fr 110px}
 .bnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:40;grid-template-columns:repeat(5,1fr);background:var(--card);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 18px rgba(0,0,0,.06)}
 .bnav button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--mut);padding:4px 2px;cursor:pointer}
 .bnav button svg{width:22px;height:22px}.bnav button.on{color:var(--pri2)}
@@ -455,7 +459,7 @@ const OPC = {
 const ref = (col, vazio) => ({type:'ref', col, vazio});
 const SCHEMA = {
   obras:{titulo:'Obra', fields:[
-    {k:'nome', l:'Nome da obra', req:1}, {k:'clienteId', l:'Cliente', ...ref('clientes')}, {k:'endereco', l:'Endereço'},
+    {k:'nome', l:'Nome da obra', req:1}, {k:'clienteId', l:'Cliente', ...ref('clientes')}, {k:'endereco', l:'Endereço da obra', type:'endereco'},
     {k:'inicio', l:'Início', type:'date', half:1}, {k:'previsao', l:'Previsão de entrega', type:'date', half:1},
     {k:'orcamento', l:'Orçamento total (R$)', type:'money', half:1}, {k:'status', l:'Status', type:'select', opts:OPC.statusObra, half:1},
     {k:'portal', l:'Liberar portal para o cliente acompanhar a obra', type:'check'}]},
@@ -474,7 +478,7 @@ const SCHEMA = {
     {k:'pago', l:'Já foi pago / recebido', type:'check'}]},
   fornecedores:{titulo:'Fornecedor', fields:[
     {k:'nome', l:'Nome', req:1}, {k:'cnpj', l:'CNPJ / CPF', half:1}, {k:'telefone', l:'WhatsApp', half:1},
-    {k:'email', l:'E-mail', half:1}, {k:'categoria', l:'O que fornece', half:1, ph:'Ex.: cimento, aço, elétrica'}]},
+    {k:'email', l:'E-mail', half:1}, {k:'categoria', l:'O que fornece', half:1, ph:'Ex.: cimento, aço, elétrica'}, {k:'endereco', l:'Endereço', type:'endereco'}]},
   materiais:{titulo:'Material', fields:[
     {k:'nome', l:'Material', req:1, ph:'Ex.: Cimento CP-II 50kg'}, {k:'unidade', l:'Unidade', type:'select', opts:OPC.unid, half:1},
     {k:'obraId', l:'Onde está', ...ref('obras', 'Depósito central'), half:1},
@@ -505,7 +509,7 @@ const SCHEMA = {
     {k:'data', l:'Data', type:'date', req:1, half:1}, {k:'dias', l:'Período', type:'select', opts:['1','0.5'], labels:['Dia inteiro','Meio período'], half:1}]},
   clientes:{titulo:'Cliente', fields:[
     {k:'nome', l:'Nome', req:1}, {k:'cpfCnpj', l:'CPF / CNPJ', half:1}, {k:'telefone', l:'WhatsApp', half:1},
-    {k:'email', l:'E-mail'}, {k:'endereco', l:'Endereço'}]},
+    {k:'email', l:'E-mail'}, {k:'endereco', l:'Endereço', type:'endereco'}]},
   contratos:{titulo:'Contrato', fields:[
     {k:'clienteId', l:'Cliente', ...ref('clientes'), req:1}, {k:'obraId', l:'Obra', ...ref('obras')},
     {k:'numero', l:'Nº do contrato', half:1}, {k:'assinadoEm', l:'Assinado em', type:'date', half:1},
@@ -513,11 +517,51 @@ const SCHEMA = {
     {k:'primeiroVenc', l:'1º vencimento', type:'date', half:1}, {k:'prazo', l:'Prazo de execução', half:1, ph:'Ex.: 150 dias'}, {k:'obs', l:'Escopo do serviço (entra no contrato)', type:'textarea'}]}
 };
 
-function campo(f, v) {
+/* ---------- endereço com CEP ---------- */
+const UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+const cepFmt = c => { const d = soDig(c).slice(0, 8); return d.length > 5 ? d.slice(0, 5) + '-' + d.slice(5) : d; };
+function endTexto(a) {
+  if (!a) return '';
+  const l1 = [a.rua, a.num].filter(Boolean).join(', ') + (a.comp ? ' - ' + a.comp : '');
+  const cid = [a.cidade, a.uf].filter(Boolean).join('/');
+  return [l1, a.bairro, cid, a.cep ? 'CEP ' + cepFmt(a.cep) : ''].filter(Boolean).join(', ');
+}
+function endHTML(pre, a = {}, dis = '') {
+  const i = (k, ph, v, x = '') => `<input id="${pre}_${k}" placeholder="${ph}" value="${esc(v || '')}" ${dis} ${x}>`;
+  return `<div class="endb" data-endpre="${pre}">
+    <div class="ecep">${i('cep', 'CEP', cepFmt(a.cep || ''), 'inputmode="numeric" maxlength="9" data-cep="' + pre + '"')}<span class="emsg" id="${pre}_msg">Digite o CEP para preencher sozinho</span></div>
+    <div class="erow r2">${i('rua', 'Rua / Avenida', a.rua)}${i('num', 'Nº', a.num)}</div>
+    <div class="erow">${i('comp', 'Complemento', a.comp)}${i('bairro', 'Bairro', a.bairro)}</div>
+    <div class="erow r2">${i('cidade', 'Cidade', a.cidade)}<select id="${pre}_uf" ${dis}><option value="">UF</option>${UFS.map(u => `<option ${u === a.uf ? 'selected' : ''}>${u}</option>`).join('')}</select></div></div>`;
+}
+function endLer(pre) {
+  const g = k => { const el = $('#' + pre + '_' + k); return el ? el.value.trim() : ''; };
+  return {cep:soDig(g('cep')), rua:g('rua'), num:g('num'), comp:g('comp'), bairro:g('bairro'), cidade:g('cidade'), uf:g('uf')};
+}
+const endDe = (obj, txt) => obj && typeof obj === 'object' ? obj : (txt ? {rua:txt} : {});
+async function buscarCep(pre) {
+  const el = $('#' + pre + '_cep'), msg = $('#' + pre + '_msg'); if (!el) return;
+  const c = soDig(el.value); if (c.length !== 8) return;
+  msg.textContent = 'Buscando...'; msg.className = 'emsg';
+  try {
+    const r = await (await fetch('https://viacep.com.br/ws/' + c + '/json/')).json();
+    if (r.erro) { msg.textContent = 'CEP não encontrado. Preencha à mão.'; msg.className = 'emsg bad'; return; }
+    const set = (k, v) => { const x = $('#' + pre + '_' + k); if (x && v) x.value = v; };
+    set('rua', r.logradouro); set('bairro', r.bairro); set('cidade', r.localidade); set('uf', r.uf);
+    msg.textContent = '✓ Endereço encontrado'; msg.className = 'emsg ok';
+    const n = $('#' + pre + '_num'); if (n && !n.value) n.focus();
+  } catch (e) { msg.textContent = 'Sem internet para buscar o CEP. Preencha à mão.'; msg.className = 'emsg bad'; }
+}
+document.addEventListener('input', e => {
+  const el = e.target; if (!el.dataset || !el.dataset.cep) return;
+  const pos = el.value.length; el.value = cepFmt(el.value); if (soDig(el.value).length === 8) buscarCep(el.dataset.cep);
+});
+function campo(f, v, rec) {
   const id = 'f_' + f.k, t = f.type || 'text', ph = f.ph ? ` placeholder="${esc(f.ph)}"` : '';
   if (t === 'select') return `<select id="${id}">${(v && !f.opts.includes(v) ? [v, ...f.opts] : f.opts).map((o, i) => `<option value="${esc(o)}" ${o == v ? 'selected' : ''}>${esc(f.labels ? f.labels[i] : o)}</option>`).join('')}</select>`;
   if (t === 'ref') return `<select id="${id}"><option value="">— ${esc(f.vazio || 'Selecione')} —</option>${(S.data[f.col] || []).slice().sort((a, b) => rotulo(f.col, a).localeCompare(rotulo(f.col, b))).map(o => `<option value="${o.id}" ${o.id === v ? 'selected' : ''}>${esc(rotulo(f.col, o))}</option>`).join('')}</select>`;
   if (t === 'textarea') return `<textarea id="${id}"${ph}>${esc(v)}</textarea>`;
+  if (t === 'endereco') return endHTML(id, endDe(rec && rec[f.k + 'Obj'], v));
   if (t === 'check') return `<label class="chk"><input type="checkbox" id="${id}" ${v ? 'checked' : ''}> ${esc(f.l)}</label>`;
   if (t === 'image') return `<input type="file" accept="image/*" id="${id}">${v ? `<img src="${v}" class="prev"><a href="#" id="verFoto" style="font-size:12.5px">Ver foto em tamanho grande</a>` : ''}`;
   const it = {money:'number" step="0.01" min="0', number:'number" step="any', pct:'number" min="0" max="100', date:'date'}[t] || 'text';
@@ -528,7 +572,7 @@ function fecharModal() { const o = $('#ov'); if (o) o.remove(); }
 
 function abrirForm(col, rec = {}) {
   const sc = SCHEMA[col], novo = !rec.id;
-  const fl = sc.fields.map(f => `<div class="fld" ${f.half ? '' : 'style="grid-column:1/-1"'}>${f.type === 'check' ? campo(f, rec[f.k]) : `<label>${esc(f.l)}${f.req ? ' *' : ''}</label>${campo(f, f.type === 'image' ? (rec[f.k + 'Thumb'] || rec[f.k]) : rec[f.k])}`}</div>`).join('');
+  const fl = sc.fields.map(f => `<div class="fld" ${f.half ? '' : 'style="grid-column:1/-1"'}>${f.type === 'check' ? campo(f, rec[f.k]) : `<label>${esc(f.l)}${f.req ? ' *' : ''}</label>${campo(f, f.type === 'image' ? (rec[f.k + 'Thumb'] || rec[f.k]) : rec[f.k], rec)}`}</div>`).join('');
   modal(`<h3>${novo ? 'Novo' : 'Editar'}: ${esc(sc.titulo)}</h3><form id="frm"><div class="f2">${fl}</div>
     <div class="mact">${!novo ? '<button type="button" class="btn danger" id="bdel">Excluir</button>' : ''}<span style="flex:1"></span>
     <button type="button" class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri" id="bsalvar">Salvar</button></div></form>`);
@@ -538,6 +582,7 @@ function abrirForm(col, rec = {}) {
     const o = {...rec};
     for (const f of sc.fields) {
       const el = $('#f_' + f.k), t = f.type || 'text';
+      if (t === 'endereco') { const a = endLer('f_' + f.k); o[f.k + 'Obj'] = a; o[f.k] = endTexto(a); if (f.req && !a.rua) { toast('Preencha: ' + f.l); return; } continue; }
       if (t === 'check') o[f.k] = el.checked;
       else if (t === 'image') { if (el.files[0]) { const r = await comprimir(el.files[0]); o.id = o.id || gid(); o._fotoNova = r.foto; delete o[f.k]; o[f.k + 'Thumb'] = r.thumb; o.temFoto = true; } }
       else if (['money','number','pct'].includes(t)) o[f.k] = el.value === '' ? '' : Number(el.value);
@@ -887,7 +932,7 @@ function pgCfg() {
   + `<div class="grid2"><div class="card"><h3>Dados da construtora</h3><form id="frmEmp">
     <div class="fld"><label>Nome da construtora</label><input id="e_nome" value="${esc(e.nome)}" ${adm ? '' : 'disabled'}></div>
     <div class="f2"><div class="fld"><label>CNPJ</label><input id="e_cnpj" value="${esc(e.cnpj)}" ${adm ? '' : 'disabled'}></div><div class="fld"><label>WhatsApp</label><input id="e_tel" value="${esc(e.telefone)}" ${adm ? '' : 'disabled'}></div></div>
-    <div class="fld"><label>Cidade / UF</label><input id="e_cid" value="${esc(e.cidade)}" ${adm ? '' : 'disabled'}></div>
+    <div class="fld"><label>Endereço da construtora</label>${endHTML('e_end', e.enderecoObj || (e.cidade ? (() => { const m = String(e.cidade).split(/\s*[\/,-]\s*/); return {cidade:m[0] || '', uf:(m[1] || '').toUpperCase()}; })() : {}), adm ? '' : 'disabled')}</div>
     ${adm ? `<div class="fld"><label>Logo (aparece nos orçamentos)</label><div class="row">${e.logo ? `<img src="${e.logo}" style="max-height:48px;max-width:120px;border-radius:6px;border:1px solid var(--line);padding:4px;background:#fff">` : ''}<button type="button" class="btn sm" data-act="logo">${e.logo ? 'Trocar logo' : 'Enviar logo'}</button>${e.logo ? '<button type="button" class="btn sm danger" data-act="rmLogo">Remover</button>' : ''}</div></div>
     <button class="btn pri">Salvar dados</button>` : ''}</form></div>
     <div class="card"><h3>Assinatura</h3><div class="list">
@@ -1118,7 +1163,7 @@ function novoOrc(dup) {
 /* ===================== CONTRATOS COM ASSINATURA ===================== */
 const CONTRATO_PADRAO = `CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE CONSTRUÇÃO CIVIL
 
-CONTRATADA: {{EMPRESA}}, inscrita no CNPJ sob o nº {{CNPJ_EMPRESA}}, com sede em {{CIDADE}}, telefone {{TELEFONE_EMPRESA}}.
+CONTRATADA: {{EMPRESA}}, inscrita no CNPJ sob o nº {{CNPJ_EMPRESA}}, com sede em {{ENDERECO_EMPRESA}}, telefone {{TELEFONE_EMPRESA}}.
 
 CONTRATANTE: {{CLIENTE}}, inscrito(a) no CPF/CNPJ sob o nº {{CPF_CLIENTE}}, residente em {{ENDERECO_CLIENTE}}, telefone {{TELEFONE_CLIENTE}}.
 
@@ -1159,13 +1204,13 @@ Fica eleito o foro da comarca de {{CIDADE}} para resolver quaisquer questões or
 As partes declaram que leram e concordam com todas as cláusulas, assinando este contrato eletronicamente.
 
 {{CIDADE}}, {{DATA}}.`;
-const CAMPOS_CONTRATO = ['EMPRESA','CNPJ_EMPRESA','TELEFONE_EMPRESA','CIDADE','CLIENTE','CPF_CLIENTE','ENDERECO_CLIENTE','TELEFONE_CLIENTE','OBRA','ENDERECO_OBRA','ESCOPO','VALOR','PARCELAS','PRIMEIRO_VENCIMENTO','PRAZO','DATA'];
+const CAMPOS_CONTRATO = ['EMPRESA','CNPJ_EMPRESA','ENDERECO_EMPRESA','TELEFONE_EMPRESA','CIDADE','CLIENTE','CPF_CLIENTE','ENDERECO_CLIENTE','TELEFONE_CLIENTE','OBRA','ENDERECO_OBRA','ESCOPO','VALOR','PARCELAS','PRIMEIRO_VENCIMENTO','PRAZO','DATA'];
 const statusCt = x => x.assinatura ? 'Assinado' : x.assinaturaToken ? 'Aguardando assinatura' : 'Não assinado';
 const badgeCt = x => { const s = statusCt(x); return `<span class="badge ${s === 'Assinado' ? 'b-ok' : s === 'Não assinado' ? 'b-mut' : 'b-warn'}">${s}</span>`; };
 function dataExtenso(s) { const m = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']; const [a, mm, d] = (s || hoje()).split('-'); return `${+d} de ${m[+mm - 1]} de ${a}`; }
 function preencherContrato(ct) {
   const E = S.empresa, c = achar('clientes', ct.clienteId) || {}, o = achar('obras', ct.obraId) || {};
-  const v = {EMPRESA:E.nome, CNPJ_EMPRESA:E.cnpj, TELEFONE_EMPRESA:E.telefone, CIDADE:E.cidade, CLIENTE:c.nome, CPF_CLIENTE:c.cpfCnpj, ENDERECO_CLIENTE:c.endereco, TELEFONE_CLIENTE:c.telefone,
+  const v = {EMPRESA:E.nome, CNPJ_EMPRESA:E.cnpj, ENDERECO_EMPRESA:E.endereco || E.cidade, TELEFONE_EMPRESA:E.telefone, CIDADE:E.cidade, CLIENTE:c.nome, CPF_CLIENTE:c.cpfCnpj, ENDERECO_CLIENTE:c.endereco, TELEFONE_CLIENTE:c.telefone,
     OBRA:o.nome || ct.obs || '', ENDERECO_OBRA:o.endereco, ESCOPO:ct.obs || o.nome || '', VALOR:brl(ct.valor), PARCELAS:String(+ct.parcelas || 1), PRIMEIRO_VENCIMENTO:fdata(ct.primeiroVenc),
     PRAZO:ct.prazo || (o.inicio && o.previsao ? Math.max(0, diasAte(o.previsao) - diasAte(o.inicio)) + ' dias' : 'combinado entre as partes'), DATA:dataExtenso(ct.assinadoEm || hoje())};
   const base = ct.texto || E.modeloContrato || CONTRATO_PADRAO;
@@ -2280,7 +2325,8 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('submit', async e => {
   if (e.target.id !== 'frmEmp') return; e.preventDefault();
-  const x = {nome:$('#e_nome').value.trim(), cnpj:$('#e_cnpj').value.trim(), telefone:$('#e_tel').value.trim(), cidade:$('#e_cid').value.trim()};
+  const ea = endLer('e_end');
+  const x = {nome:$('#e_nome').value.trim(), cnpj:$('#e_cnpj').value.trim(), telefone:$('#e_tel').value.trim(), enderecoObj:ea, endereco:endTexto(ea), cidade:[ea.cidade, ea.uf].filter(Boolean).join('/')};
   await API.setEmpresa(S.eid, x); Object.assign(S.empresa, x); montarApp(); toast('Dados salvos');
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModal(); });
