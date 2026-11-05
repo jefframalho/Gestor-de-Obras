@@ -32,6 +32,12 @@ Itens por etapa com o seu custo, BDI/margem e desconto. "Salvar e gerar PDF" abr
 
 Em Clientes → Contratos, botão **Assinar**: enviar o link para o cliente assinar pelo celular, ou assinar na hora com o dedo. O modelo do contrato (com campos automáticos {{CLIENTE}}, {{VALOR}}...) e a assinatura da construtora ficam em Configurações. Cada assinatura registra nome, CPF, data/hora e aparelho.
 
+## Equipe e diário de obra (RDO)
+
+- Profissões de obra com diária padrão por função (editável em Configurações), tipo de contratação, Pix e validade de NR-35/ASO com alerta.
+- Diário de obra no formato RDO: equipe presente (lança as diárias sozinho, sem duplicar), terceirizados, serviços por etapa (atualiza o % do cronograma), clima manhã/tarde, expediente, até 12 fotos, ocorrências, visitas e equipamentos. PDF do RDO assinado pelo responsável.
+- Portal do cliente: equipe na obra por função, galeria de fotos e diário completo.
+
 ## Aditivos de contrato
 
 Em Clientes → Contratos → **Aditivos**: acréscimo (serviço extra) ou supressão, com valor, dias a mais no prazo e forma de pagamento. Assinado na hora ou por link. Ao assinar: o valor vai para o financeiro (a receber), o prazo da obra é prorrogado e o valor do contrato é atualizado.

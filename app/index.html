@@ -132,6 +132,19 @@ tbody tr:hover{background:var(--soft)}
 .seg button.on.ok{background:var(--ok);color:#fff}.seg button.on.pend{background:var(--bad);color:#fff}.seg button.on.na{background:var(--mut);color:#fff}
 .vf{display:flex;gap:6px;align-items:center}.vf img{width:46px;height:36px;object-fit:cover;border-radius:6px;cursor:pointer}.vf label.btn{cursor:pointer}
 @media (max-width:860px){.vit{grid-template-columns:1fr auto}.vit .vo{grid-column:1/-1}.vit .vf{grid-column:1/-1;justify-content:flex-end}}
+.rsec{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:12px}.rsh{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px}.rsh small,.rsh span{color:var(--mut);font-size:12.5px}.rsh span{margin-left:auto;color:var(--pri2);font-weight:600}
+.rsub{font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:6px}.rpes{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:6px 8px;cursor:pointer}.rpes span{flex:1;min-width:0}.rpes small{color:var(--mut)}.rpes select{padding:3px 6px;font-size:12px}
+.rsec details{margin-top:8px}.rsec summary{cursor:pointer;color:var(--mut);font-size:13px;margin-bottom:6px}
+.rrow{display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap}.rrow input,.rrow select{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);flex:1;min-width:110px}.rpct{display:flex;align-items:center;gap:3px;color:var(--mut)}.rpct input{min-width:0}
+.rfotos{display:flex;flex-wrap:wrap;gap:8px}.rft{position:relative}.rft img{width:96px;height:72px;object-fit:cover;border-radius:8px;cursor:pointer;display:block}.rft button{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:0;background:var(--bad);color:#fff;cursor:pointer;font-weight:700;line-height:1}
+.dia.rdo{display:block}.dh{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.dh small{color:var(--mut)}.dh .cl{margin-left:auto;color:var(--mut);font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.chips span{background:var(--priSoft);color:var(--pri2);font-weight:600;font-size:12.5px;padding:3px 10px;border-radius:99px}
+.sv{margin:0 0 6px;padding-left:18px;color:var(--ink)}.sv li{margin:2px 0}.sv em{color:var(--ok);font-style:normal;font-weight:700}.dia .oc{color:var(--warn);margin-top:4px}
+.th{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center}.th img{width:84px;height:63px;object-fit:cover;border-radius:7px;cursor:zoom-in}.th span{color:var(--mut);font-weight:700;font-size:13px}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}.gal img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;cursor:zoom-in}
+.zoom{position:fixed;inset:0;background:rgba(0,0,0,.85);display:grid;place-items:center;z-index:99;padding:16px;cursor:zoom-out}.zoom img{max-width:100%;max-height:100%;border-radius:8px}
+.dgrid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}.dgrid2 label{display:flex;align-items:center;gap:8px;font-size:13px}.dgrid2 label span{flex:1}.dgrid2 input{width:96px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
 .opcs{display:grid;gap:10px}.opc{text-align:left;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:14px 16px;cursor:pointer}.opc:hover{border-color:var(--pri);background:var(--priSoft)}.opc b{display:block;font-size:14.5px;margin-bottom:2px}.opc span{color:var(--mut);font-size:13px}
 .tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}.tags code{background:var(--priSoft);color:var(--pri2);padding:2px 7px;border-radius:6px;font-size:11.5px;cursor:pointer}
 table.itens td{padding:5px 6px}table.itens input,table.itens select{padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);width:100%}
@@ -439,8 +452,10 @@ const SCHEMA = {
     {k:'itens', l:'Itens do pedido', type:'textarea', req:1, ph:'50 sacos de cimento CP-II\n10 m³ de areia média'},
     {k:'valor', l:'Valor total (R$)', type:'money', half:1}, {k:'status', l:'Status', type:'select', opts:OPC.statusPed, half:1}]},
   funcionarios:{titulo:'Funcionário', fields:[
-    {k:'nome', l:'Nome', req:1}, {k:'funcao', l:'Função', half:1, ph:'Pedreiro, servente...'}, {k:'telefone', l:'WhatsApp', half:1},
-    {k:'cpf', l:'CPF', half:1}, {k:'diaria', l:'Valor da diária (R$)', type:'money', half:1},
+    {k:'nome', l:'Nome', req:1}, {k:'funcao', l:'Função', type:'select', opts:['Pedreiro','Ajudante / Servente','Mestre de obras','Encarregado','Engenheiro civil','Arquiteto(a)','Eletricista','Encanador','Pintor','Carpinteiro','Armador','Gesseiro','Azulejista','Serralheiro','Vidraceiro','Operador de máquinas','Técnico de segurança','Outro'], half:1},
+    {k:'tipo', l:'Contratação', type:'select', opts:['Diarista','Empreiteiro (por produção)','CLT','Terceirizado'], half:1},
+    {k:'diaria', l:'Valor da diária (R$)', type:'money', half:1}, {k:'telefone', l:'WhatsApp', half:1}, {k:'cpf', l:'CPF', half:1}, {k:'pix', l:'Chave Pix (para pagar)', half:1},
+    {k:'nr35', l:'Validade NR-35 (trabalho em altura)', type:'date', half:1}, {k:'aso', l:'Validade ASO (exame ocupacional)', type:'date', half:1},
     {k:'obraId', l:'Obra atual', ...ref('obras', 'Sem obra')}, {k:'ativo', l:'Ativo', type:'check'}]},
   apontamentos:{titulo:'Diária', fields:[
     {k:'funcionarioId', l:'Funcionário', ...ref('funcionarios'), req:1}, {k:'obraId', l:'Obra', ...ref('obras'), req:1},
@@ -457,7 +472,7 @@ const SCHEMA = {
 
 function campo(f, v) {
   const id = 'f_' + f.k, t = f.type || 'text', ph = f.ph ? ` placeholder="${esc(f.ph)}"` : '';
-  if (t === 'select') return `<select id="${id}">${f.opts.map((o, i) => `<option value="${esc(o)}" ${o == v ? 'selected' : ''}>${esc(f.labels ? f.labels[i] : o)}</option>`).join('')}</select>`;
+  if (t === 'select') return `<select id="${id}">${(v && !f.opts.includes(v) ? [v, ...f.opts] : f.opts).map((o, i) => `<option value="${esc(o)}" ${o == v ? 'selected' : ''}>${esc(f.labels ? f.labels[i] : o)}</option>`).join('')}</select>`;
   if (t === 'ref') return `<select id="${id}"><option value="">— ${esc(f.vazio || 'Selecione')} —</option>${(S.data[f.col] || []).slice().sort((a, b) => rotulo(f.col, a).localeCompare(rotulo(f.col, b))).map(o => `<option value="${o.id}" ${o.id === v ? 'selected' : ''}>${esc(rotulo(f.col, o))}</option>`).join('')}</select>`;
   if (t === 'textarea') return `<textarea id="${id}"${ph}>${esc(v)}</textarea>`;
   if (t === 'check') return `<label class="chk"><input type="checkbox" id="${id}" ${v ? 'checked' : ''}> ${esc(f.l)}</label>`;
@@ -474,6 +489,7 @@ function abrirForm(col, rec = {}) {
   modal(`<h3>${novo ? 'Novo' : 'Editar'}: ${esc(sc.titulo)}</h3><form id="frm"><div class="f2">${fl}</div>
     <div class="mact">${!novo ? '<button type="button" class="btn danger" id="bdel">Excluir</button>' : ''}<span style="flex:1"></span>
     <button type="button" class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri" id="bsalvar">Salvar</button></div></form>`);
+  if (HOOK[col] && HOOK[col].form) HOOK[col].form(rec);
   $('#frm').onsubmit = async e => {
     e.preventDefault();
     const o = {...rec};
@@ -517,14 +533,15 @@ const HOOK = {
     excluir:async o => {
       const lig = ['etapas','diario'].reduce((s, c) => s + S.data[c].filter(x => x.obraId === o.id).length, 0);
       if (lig && !confirm(`Esta obra tem ${lig} etapa(s)/registro(s) de diário que também serão apagados. Continuar?`)) throw new Error('cancelado');
-      for (const c of ['etapas','diario']) for (const x of S.data[c].filter(x => x.obraId === o.id)) { if (x.temFoto) await API.del(S.eid, 'fotos', x.id).catch(() => {}); await excluir(c, x.id); }
+      for (const c of ['etapas','diario']) for (const x of S.data[c].filter(x => x.obraId === o.id)) { if (c === 'diario') for (const f of fotosDiario(x)) await API.del(S.eid, 'fotos', chaveFoto(x, f)).catch(() => {}); await excluir(c, x.id); }
       if (o.portalToken) await API.setPortal(o.portalToken, {empresaId:S.eid, ativo:false});
     }
   },
   etapas:{depois:o => syncPortal(o.obraId), excluir:o => setTimeout(() => syncPortal(o.obraId), 50)},
   diario:{depois:o => syncPortal(o.obraId), excluir:async o => { if (o.temFoto) await API.del(S.eid, 'fotos', o.id).catch(() => {}); setTimeout(() => syncPortal(o.obraId), 50); }},
   lancamentos:{antes:(o, old) => { if (o.pago && !old.pago) o.dataPagamento = hoje(); if (!o.pago) o.dataPagamento = ''; }},
-  funcionarios:{antes:(o, old) => { if (!old.id && o.ativo === false && !('ativo' in old)) o.ativo = true; }},
+  funcionarios:{form:() => { const fn = $('#f_funcao'), di = $('#f_diaria'); let ult = diariaPadrao(fn.value);
+    fn.onchange = () => { if (di.value === '' || +di.value === +ult) di.value = diariaPadrao(fn.value); ult = diariaPadrao(fn.value); }; }},
   movimentos:{
     antes:async (o, old) => {
       const m = achar('materiais', o.materialId);
@@ -559,7 +576,12 @@ async function syncPortal(oid) {
   const o = achar('obras', oid); if (!o || !o.portalToken) return;
   if (!o.portal) return API.setPortal(o.portalToken, {empresaId:S.eid, ativo:false});
   const et = S.data.etapas.filter(e => e.obraId === oid).sort((a, b) => (a.inicio || '').localeCompare(b.inicio || '')).map(e => ({nome:e.nome, inicio:e.inicio || '', fim:e.fim || '', percentual:+e.percentual || 0}));
-  const di = S.data.diario.filter(d => d.obraId === oid).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 15).map(d => ({data:d.data, texto:d.texto, clima:d.clima || '', thumb:d.fotoThumb || ''}));
+  let restam = 20;
+  const di = S.data.diario.filter(d => d.obraId === oid).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 15).map(d => {
+    const fs2 = fotosDiario(d).slice(0, Math.max(0, Math.min(4, restam))); restam -= fs2.length;
+    const txt = [...(d.servicos || []).map(sv => { const e = achar('etapas', sv.etapaId); return (e ? e.nome + ': ' : '') + (sv.descricao || ''); }), d.texto].filter(Boolean).join('\n');
+    return {data:d.data, texto:txt, clima:d.climaManha || d.clima || '', equipe:resumoEquipe(d), total:totalEquipe(d) || +d.equipe || 0, fotos:fs2.map(f => f.thumb), thumb:fs2[0] ? fs2[0].thumb : ''};
+  });
   await API.setPortal(o.portalToken, {empresaId:S.eid, ativo:true, empresaNome:S.empresa.nome || '', empresaTel:S.empresa.telefone || '', obraNome:o.nome, endereco:o.endereco || '', status:o.status || '', inicio:o.inicio || '', previsao:o.previsao || '', progresso:Math.round(progressoObra(oid)), etapas:et, diario:di, atualizadoEm:Date.now()});
 }
 const linkPortal = o => location.origin + location.pathname + '?portal=' + o.portalToken;
@@ -629,7 +651,8 @@ function pgDash() {
     }).join('') : '<p style="color:var(--mut)">Nenhuma obra em andamento.</p>'}</div></div>
     <div style="display:grid;gap:16px;align-content:start">
     ${fin ? `<div class="card"><h3>Contas dos próximos 7 dias e vencidas</h3><div class="list">${prox.length ? prox.map(l => `<div class="it" style="cursor:pointer" data-act="edit" data-a="lancamentos" data-b="${l.id}"><div><b>${esc(l.descricao)}</b><small>${fdata(l.vencimento)} · ${l.tipo === 'Receber' ? 'a receber' : 'a pagar'}</small></div><div style="text-align:right"><b style="color:${l.tipo === 'Receber' ? 'var(--ok)' : 'inherit'}">${brl(l.valor)}</b><br>${statusLanc(l)}</div></div>`).join('') : '<p style="color:var(--mut)">Nada para os próximos dias. 👍</p>'}</div></div>` : ''}
-    <div class="card"><h3>Estoque abaixo do mínimo</h3><div class="list">${baixo.length ? baixo.map(m => `<div class="it" style="cursor:pointer" data-act="edit" data-a="materiais" data-b="${m.id}"><div><b>${esc(m.nome)}</b><small>${esc(m.obraId ? nomeDe('obras', m.obraId) : 'Depósito central')}</small></div><span class="badge b-bad">${num(m.quantidade)} / mín. ${num(m.minimo)} ${esc(m.unidade || '')}</span></div>`).join('') : '<p style="color:var(--mut)">Tudo em dia.</p>'}</div></div></div></div>`;
+    <div class="card"><h3>Estoque abaixo do mínimo</h3><div class="list">${baixo.length ? baixo.map(m => `<div class="it" style="cursor:pointer" data-act="edit" data-a="materiais" data-b="${m.id}"><div><b>${esc(m.nome)}</b><small>${esc(m.obraId ? nomeDe('obras', m.obraId) : 'Depósito central')}</small></div><span class="badge b-bad">${num(m.quantidade)} / mín. ${num(m.minimo)} ${esc(m.unidade || '')}</span></div>`).join('') : '<p style="color:var(--mut)">Tudo em dia.</p>'}</div></div>
+    ${(() => { const v = D.funcionarios.filter(f => f.ativo !== false && docsVencendo(f).length); return v.length ? `<div class="card"><h3>Documentos da equipe vencendo</h3><div class="list">${v.map(f => `<div class="it" style="cursor:pointer" data-act="edit" data-a="funcionarios" data-b="${f.id}"><div><b>${esc(f.nome)}</b><small>${esc(f.funcao || '')}</small></div><div>${badgeDocs(f)}</div></div>`).join('')}</div></div>` : ''; })()}</div></div>`;
 }
 
 /* ---------- obras ---------- */
@@ -666,8 +689,8 @@ function pgObra() {
     + tabela('etapas', et, [{h:'Etapa', k:'nome'}, {h:'Período', f:e => e.inicio || e.fim ? `${fdata(e.inicio)} a ${fdata(e.fim)}` : '<span style="color:var(--mut)">a definir</span>'}, ...(fin ? [{h:'Custo previsto', r:1, f:e => brl(e.custoPrevisto)}] : []), {h:'Andamento', f:e => `<div style="min-width:150px">${barra(+e.percentual || 0, +e.percentual >= 100 ? 'g' : '')}</div>`}], 'Cadastre as etapas (fundação, estrutura, alvenaria...) para acompanhar o avanço e o cronograma.');
   else if (at === 'diario') {
     const ds = S.data.diario.filter(d => d.obraId === o.id).sort((a, b) => b.data.localeCompare(a.data) || b.criadoEm - a.criadoEm);
-    corpo = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="diario" data-b="${o.id}">+ Registro do dia</button></div>`
-      + (ds.length ? `<div class="diario">${ds.map(d => `<div class="dia" data-act="edit" data-a="diario" data-b="${d.id}">${d.fotoThumb ? `<img src="${d.fotoThumb}" alt="">` : ''}<div><h5>${fdata(d.data)} · ${esc(d.clima || '')}${d.equipe ? ` · ${d.equipe} pessoa(s)` : ''}</h5><p>${esc(d.texto)}</p></div></div>`).join('')}</div>` : '<div class="vazio">Nenhum registro ainda. Registre o que foi feito no dia, com foto.</div>');
+    corpo = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="diario" data-b="${o.id}">+ Registro do dia (RDO)</button></div>`
+      + (ds.length ? `<div class="diario">${ds.map(cardDiario).join('')}</div>` : '<div class="vazio">Nenhum registro ainda. Registre o dia: equipe presente, serviços feitos e fotos — as diárias são lançadas sozinhas.</div>');
   } else if (at === 'fin') {
     const ls = lancObra(o.id).sort((a, b) => b.vencimento.localeCompare(a.vencimento));
     corpo = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="lancamentos" data-b="${o.id}">+ Lançamento</button></div>` + tabelaLanc(ls);
@@ -682,7 +705,7 @@ function pgObra() {
     const aps = S.data.apontamentos.filter(a => a.obraId === o.id);
     const custoMO = aps.reduce((s, a) => s + (+a.dias || 0) * (+(achar('funcionarios', a.funcionarioId) || {}).diaria || 0), 0);
     corpo = `<div class="row" style="justify-content:space-between;margin-bottom:12px"><span style="color:var(--mut)">${aps.length} diária(s) lançada(s)${fin ? ' · ' + brl(custoMO) + ' em mão de obra' : ''}</span><button class="btn pri" data-act="lancarDiarias" data-a="${o.id}">Lançar diárias do dia</button></div>`
-      + tabela('funcionarios', fs_, [{h:'Nome', k:'nome'}, {h:'Função', k:'funcao'}, {h:'Diária', r:1, f:f => brl(f.diaria)}], 'Nenhum funcionário alocado nesta obra (defina a "Obra atual" no cadastro do funcionário).');
+      + tabela('funcionarios', fs_, [{h:'Nome', f:f => `<b>${esc(f.nome)}</b> ${badgeDocs(f)}`}, {h:'Função', k:'funcao'}, ...(fin ? [{h:'Diária', r:1, f:f => brl(f.diaria)}] : [])], 'Nenhum funcionário alocado nesta obra (defina a "Obra atual" no cadastro do funcionário).');
   }
   return `<button class="btn sm" data-act="nav" data-a="obras" style="margin-bottom:14px">← Obras</button>`
   + topo(esc(o.nome) + ' ' + badgeObra(o.status), `${esc(nomeDe('clientes', o.clienteId, 'Sem cliente'))}${o.endereco ? ' · ' + esc(o.endereco) : ''} · ${fdata(o.inicio)} → ${fdata(o.previsao)}`,
@@ -758,7 +781,7 @@ function pgEquipe() {
   let c = '';
   if (at === 'func') c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="funcionarios">+ Funcionário</button></div>`
     + tabela('funcionarios', S.data.funcionarios.slice().sort((a, b) => (b.ativo !== false) - (a.ativo !== false) || a.nome.localeCompare(b.nome)), [
-      {h:'Nome', f:f => `<b>${esc(f.nome)}</b>${f.ativo === false ? ' <span class="badge b-mut">inativo</span>' : ''}`}, {h:'Função', k:'funcao'}, {h:'Obra atual', f:f => esc(nomeDe('obras', f.obraId))},
+      {h:'Nome', f:f => `<b>${esc(f.nome)}</b>${f.ativo === false ? ' <span class="badge b-mut">inativo</span>' : ''}${docsVencendo(f).length ? '<br>' + badgeDocs(f) : ''}`}, {h:'Função', f:f => `${esc(f.funcao || '')}<br><small style="color:var(--mut)">${esc(f.tipo || 'Diarista')}</small>`}, {h:'Obra atual', f:f => esc(nomeDe('obras', f.obraId))},
       {h:'Diária', r:1, f:f => brl(f.diaria)}, {h:'Diárias em aberto', r:1, f:f => num(diariasAbertas(f.id).reduce((s, a) => s + +a.dias, 0))},
       ...(fin ? [{h:'A pagar', r:1, f:f => `<b>${brl(diariasAbertas(f.id).reduce((s, a) => s + +a.dias, 0) * (+f.diaria || 0))}</b>`}, {h:'', r:1, f:f => diariasAbertas(f.id).length ? `<button class="btn sm ok" data-act="pagarFunc" data-a="${f.id}">Pagar</button>` : ''}] : [])], 'Nenhum funcionário cadastrado.');
   else if (at === 'dia') c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn" data-act="novo" data-a="apontamentos">+ Diária avulsa</button><button class="btn pri" data-act="lancarDiarias">Lançar diárias do dia</button></div>`
@@ -808,6 +831,9 @@ function pgCfg() {
       <div class="it"><span>Plano</span><b>${brl(PRECO_MENSAL)}/mês · obras e usuários ilimitados</b></div></div>
       <a class="btn pri" style="margin-top:14px" target="_blank" href="${wa(WHATS_SUPORTE, `Olá! Quero ${e.status === 'teste' ? 'assinar' : 'renovar'} o Gestor de Obras da ${e.nome}.`)}">${e.status === 'teste' ? 'Assinar agora' : 'Renovar assinatura'}</a>
       <a class="btn" style="margin-top:14px" target="_blank" href="${wa(WHATS_SUPORTE, 'Olá! Preciso de ajuda com o Gestor de Obras.')}">Suporte</a></div></div>
+  ${adm ? `<div class="card" style="margin-top:16px"><h3>Diária por função</h3><p style="color:var(--mut);margin-top:0">Valor sugerido automaticamente ao cadastrar um profissional. Você ainda pode mudar a diária de cada pessoa.</p>
+    <div class="dgrid2">${Object.keys(PROFISSOES).map(f => `<label><span>${esc(f)}</span><input type="number" step="0.01" data-dfun="${esc(f)}" value="${esc(diariaPadrao(f))}"></label>`).join('')}</div>
+    <button class="btn pri" style="margin-top:12px" data-act="salvarDiarias">Salvar diárias</button></div>` : ''}
   ${adm ? `<div class="card" style="margin-top:16px"><h3>Contratos</h3><p style="color:var(--mut);margin-top:0">Modelo usado nos contratos e assinatura da construtora (entra como CONTRATADA).</p>
     <div class="row"><button class="btn" data-act="modeloCt">Editar modelo de contrato</button><button class="btn" data-act="assEmp">${e.assinatura ? 'Refazer assinatura da construtora' : 'Cadastrar assinatura da construtora'}</button>${e.assinatura ? `<img src="${e.assinatura}" style="height:40px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:2px 8px">` : ''}</div></div>` : ''}
   ${adm ? `<div class="card" style="margin-top:16px"><h3>Seus dados</h3><p style="color:var(--mut);margin-top:0">Baixe uma cópia de todas as informações da construtora (backup).</p><div class="row"><button class="btn" data-act="backup">Baixar backup (JSON)</button>${!S.data.obras.length ? '<button class="btn" data-act="exemplo">Carregar dados de exemplo</button>' : ''}</div></div>` : ''}`;
@@ -1569,6 +1595,195 @@ async function enviarAditivo(id) {
     ${c.telefone ? `<a class="btn pri" target="_blank" href="${wa(c.telefone, `Olá, ${(c.nome || '').split(' ')[0]}! Segue o aditivo nº ${a.n} do seu contrato com a ${S.empresa.nome} (${a.tipo === 'Supressão' ? 'redução' : 'acréscimo'} de ${brl(a.valor)}) para você ler e assinar pelo celular: ${url}`)}">Enviar no WhatsApp</a>` : ''}</div>`);
 }
 
+/* ===================== PROFISSÕES DE OBRA ===================== */
+const PROFISSOES = {'Pedreiro':180, 'Ajudante / Servente':110, 'Mestre de obras':260, 'Encarregado':220, 'Engenheiro civil':450, 'Arquiteto(a)':400, 'Eletricista':200, 'Encanador':190, 'Pintor':170,
+  'Carpinteiro':190, 'Armador':180, 'Gesseiro':180, 'Azulejista':190, 'Serralheiro':200, 'Vidraceiro':190, 'Operador de máquinas':230, 'Técnico de segurança':250, 'Outro':150};
+const PLURAL = {'Ajudante / Servente':'Ajudantes', 'Mestre de obras':'Mestres de obras', 'Engenheiro civil':'Engenheiros', 'Arquiteto(a)':'Arquitetos', 'Operador de máquinas':'Operadores de máquinas', 'Técnico de segurança':'Técnicos de segurança', 'Outro':'Outros', 'Encarregado':'Encarregados'};
+const nomeFuncao = (f, n) => n > 1 ? (PLURAL[f] || f + 's') : (f === 'Ajudante / Servente' ? 'Ajudante' : f);
+const diariaPadrao = f => { const d = (S.empresa && S.empresa.diarias) || {}; return f in d ? d[f] : (PROFISSOES[f] ?? ''); };
+const TIPOS_CONTR = ['Diarista', 'Empreiteiro (por produção)', 'CLT', 'Terceirizado'];
+function docsVencendo(f) {
+  const r = [];
+  [['nr35', 'NR-35'], ['aso', 'ASO']].forEach(([k, l]) => { if (f[k]) { const d = diasAte(f[k]); if (d <= 30) r.push({doc:l, data:f[k], dias:d}); } });
+  return r;
+}
+const badgeDocs = f => docsVencendo(f).map(x => `<span class="badge ${x.dias < 0 ? 'b-bad' : 'b-warn'}" title="${x.doc} ${x.dias < 0 ? 'vencido' : 'vence'} em ${fdata(x.data)}">${x.doc} ${x.dias < 0 ? 'vencido' : x.dias + 'd'}</span>`).join(' ');
+function resumoEquipe(d) {
+  const c = {};
+  (d.presentes || []).forEach(p => { const f = achar('funcionarios', p.fid); const fn = (f && f.funcao) || 'Outro'; c[fn] = (c[fn] || 0) + 1; });
+  (d.terceiros || []).forEach(t => { if (+t.qtd > 0) c[t.funcao || 'Outro'] = (c[t.funcao || 'Outro'] || 0) + (+t.qtd); });
+  return Object.entries(c).sort((a, b) => b[1] - a[1]).map(([f, n]) => `${n} ${nomeFuncao(f, n)}`);
+}
+const totalEquipe = d => (d.presentes || []).length + (d.terceiros || []).reduce((s, t) => s + (+t.qtd || 0), 0);
+
+/* ===================== DIÁRIO DE OBRA (RDO) ===================== */
+const CLIMAS = ['Ensolarado', 'Nublado', 'Chuvoso', 'Sem expediente'];
+const ICO_CLIMA = {Ensolarado:'☀️', Nublado:'⛅', Chuvoso:'🌧️', 'Sem expediente':'⛔'};
+const EXPEDIENTES = ['Normal', 'Parcial', 'Paralisado'];
+const diaSemana = s => { if (!s) return ''; const w = new Date(s + 'T12:00').toLocaleDateString('pt-BR', {weekday:'long'}); return w.charAt(0).toUpperCase() + w.slice(1); };
+const numRDO = d => { const l = S.data.diario.filter(x => x.obraId === d.obraId).sort((a, b) => (a.data || '').localeCompare(b.data || '') || a.criadoEm - b.criadoEm); const i = l.findIndex(x => x.id === d.id); return i < 0 ? l.length + 1 : i + 1; };
+const fotosDiario = d => d.fotos || (d.fotoThumb ? [{id:'_legacy', thumb:d.fotoThumb}] : []);
+const chaveFoto = (d, f) => f.id === '_legacy' ? d.id : d.id + '_' + f.id;
+async function verFotoGrande(chave) { const x = await API.getDoc(S.eid, 'fotos', chave); if (x && x.foto) { const w = window.open(); w.document.write(`<title>Foto</title><body style="margin:0;background:#000"><img src="${x.foto}" style="max-width:100%;display:block;margin:auto">`); } else toast('Foto não encontrada.'); }
+
+function editorDiario(rec) {
+  const d = JSON.parse(JSON.stringify(rec));
+  const novo = !d.id; d.id = d.id || gid();
+  if (!d.fotos) d.fotos = fotosDiario(rec);
+  d.climaManha = d.climaManha || d.clima || 'Ensolarado'; d.climaTarde = d.climaTarde || d.climaManha;
+  d.expediente = d.expediente || 'Normal'; d.terceiros = d.terceiros || []; d.servicos = d.servicos || [];
+  d.responsavel = d.responsavel ?? (S.perfil.nome || '');
+  if (novo && !d.presentes) d.presentes = S.data.funcionarios.filter(f => f.ativo !== false && f.obraId === d.obraId).map(f => ({fid:f.id, dias:'1'}));
+  d.presentes = d.presentes || [];
+  const travado = !!d.assinaturaResp;
+  const opt = (arr, v) => arr.map(x => `<option ${x === v ? 'selected' : ''}>${x}</option>`).join('');
+  modal(`<h3>${novo ? 'Novo registro' : 'RDO nº ' + numRDO(d)} — diário de obra</h3>
+    ${travado ? '<p class="demo">Este RDO já foi assinado pelo responsável. Para alterar, remova a assinatura primeiro.</p>' : ''}
+    <div class="f2"><div class="fld"><label>Obra *</label><select id="r_obra" ${novo ? '' : 'disabled'}>${S.data.obras.map(o => `<option value="${o.id}" ${o.id === d.obraId ? 'selected' : ''}>${esc(o.nome)}</option>`).join('')}</select></div>
+      <div class="fld"><label>Data *</label><input type="date" id="r_data" value="${esc(d.data)}"></div>
+      <div class="fld"><label>Clima — manhã</label><select id="r_cm">${opt(CLIMAS, d.climaManha)}</select></div>
+      <div class="fld"><label>Clima — tarde</label><select id="r_ct">${opt(CLIMAS, d.climaTarde)}</select></div>
+      <div class="fld"><label>Expediente</label><select id="r_exp">${opt(EXPEDIENTES, d.expediente)}</select></div>
+      <div class="fld"><label>Responsável pelo registro</label><input id="r_resp" value="${esc(d.responsavel)}" placeholder="Mestre de obras ou engenheiro"></div></div>
+    <div class="rsec"><div class="rsh"><b>👷 Equipe presente</b><span id="r_eqres"></span></div><div id="r_equipe"></div>
+      <div class="rsub">Terceirizados / pessoas sem cadastro</div><div id="r_terc"></div><button type="button" class="btn sm" id="r_addt">+ Terceirizado</button>
+      <label class="chk" style="margin-top:10px"><input type="checkbox" id="r_lanc" ${d.lancarDiarias !== false ? 'checked' : ''}> Lançar as diárias da equipe presente automaticamente</label></div>
+    <div class="rsec"><div class="rsh"><b>🧱 Serviços executados</b><small>Escolha a etapa e atualize o % concluído — o cronograma acompanha.</small></div><div id="r_serv"></div><button type="button" class="btn sm" id="r_adds">+ Serviço</button></div>
+    <div class="rsec"><div class="rsh"><b>📷 Fotos</b><small>Até 12 fotos</small></div><div class="rfotos" id="r_fotos"></div>
+      <label class="btn sm" style="cursor:pointer;margin-top:8px">📷 Adicionar fotos<input type="file" accept="image/*" multiple id="r_fin" hidden></label></div>
+    <div class="f2" style="margin-top:12px"><div class="fld" style="grid-column:1/-1"><label>Observações gerais</label><textarea id="r_txt" style="min-height:70px">${esc(d.texto)}</textarea></div>
+      <div class="fld"><label>Ocorrências (falta de material, acidente, atraso…)</label><textarea id="r_oc" style="min-height:60px">${esc(d.ocorrencias)}</textarea></div>
+      <div class="fld"><label>Visitas (cliente, fiscal, engenheiro…)</label><textarea id="r_vis" style="min-height:60px">${esc(d.visitas)}</textarea></div>
+      <div class="fld" style="grid-column:1/-1"><label>Equipamentos na obra</label><input id="r_eqp" value="${esc(d.equipamentos)}" placeholder="Ex.: betoneira, andaimes, serra circular"></div></div>
+    <div class="mact">${novo ? '' : `<button type="button" class="btn danger" id="r_del">Excluir</button>`}${travado ? '<button type="button" class="btn" id="r_unsig">Remover assinatura</button>' : ''}<span style="flex:1"></span><button type="button" class="btn" onclick="fecharModal()">Cancelar</button>${travado ? '' : '<button type="button" class="btn pri" id="r_ok">Salvar</button>'}</div>`, 'wide');
+
+  const equipe = () => {
+    const at = S.data.funcionarios.filter(f => f.ativo !== false);
+    const daObra = at.filter(f => f.obraId === d.obraId), outros = at.filter(f => f.obraId !== d.obraId);
+    const pres = id => d.presentes.find(p => p.fid === id);
+    const linha = f => { const p = pres(f.id); return `<label class="rpes"><input type="checkbox" data-pres="${f.id}" ${p ? 'checked' : ''}><span><b>${esc(f.nome)}</b> <small>${esc(f.funcao || '')}</small></span><select data-pdias="${f.id}" class="sel" ${p ? '' : 'disabled'}><option value="1" ${p && p.dias === '0.5' ? '' : 'selected'}>Dia inteiro</option><option value="0.5" ${p && p.dias === '0.5' ? 'selected' : ''}>Meio período</option></select></label>`; };
+    $('#r_equipe').innerHTML = !at.length ? '<p style="color:var(--mut);margin:4px 0">Nenhum funcionário cadastrado (Equipe → + Funcionário).</p>'
+      : `<div class="rgrid">${daObra.map(linha).join('') || '<p style="color:var(--mut);margin:4px 0">Ninguém alocado nesta obra.</p>'}</div>${outros.length ? `<details ${outros.some(f => pres(f.id)) ? 'open' : ''}><summary>Outros funcionários (${outros.length})</summary><div class="rgrid">${outros.map(linha).join('')}</div></details>` : ''}`;
+    $('#r_terc').innerHTML = d.terceiros.map((t, k) => `<div class="rrow"><select data-tk="${k}" data-tf="funcao">${opt(Object.keys(PROFISSOES), t.funcao)}</select><input type="number" min="1" data-tk="${k}" data-tf="qtd" value="${esc(t.qtd)}" style="width:80px" placeholder="Qtd."><input data-tk="${k}" data-tf="empresa" value="${esc(t.empresa)}" placeholder="Empresa / empreiteiro"><button type="button" class="btn sm danger" data-trm="${k}">×</button></div>`).join('');
+    resumo();
+  };
+  const resumo = () => { const r = resumoEquipe(d); $('#r_eqres').textContent = r.length ? `${totalEquipe(d)} pessoa(s): ${r.join(' · ')}` : 'ninguém marcado'; };
+  const servicos = () => {
+    const ets = S.data.etapas.filter(e => e.obraId === d.obraId);
+    $('#r_serv').innerHTML = d.servicos.map((s, k) => { const e = achar('etapas', s.etapaId); return `<div class="rrow"><select data-sk="${k}" data-sf="etapaId"><option value="">— Sem etapa —</option>${ets.map(e => `<option value="${e.id}" ${e.id === s.etapaId ? 'selected' : ''}>${esc(e.nome)}</option>`).join('')}</select>
+      <input data-sk="${k}" data-sf="descricao" value="${esc(s.descricao)}" placeholder="O que foi feito" style="flex:2">
+      <span class="rpct">${s.etapaId ? `<input type="number" min="0" max="100" data-sk="${k}" data-sf="pct" value="${esc(s.pct ?? (e ? e.percentual : ''))}" style="width:70px">%` : ''}</span><button type="button" class="btn sm danger" data-srm="${k}">×</button></div>`; }).join('') || '<p style="color:var(--mut);margin:4px 0">Nenhum serviço listado.</p>';
+  };
+  const fotos = () => { $('#r_fotos').innerHTML = d.fotos.map((f, k) => `<div class="rft"><img src="${f.thumb}" data-fver="${k}" alt=""><button type="button" data-frm="${k}" title="Remover">×</button></div>`).join(''); };
+  equipe(); servicos(); fotos();
+  const M = $('#ov');
+  M.addEventListener('change', async e => {
+    const el = e.target;
+    if (el.dataset.pres) { const id = el.dataset.pres; if (el.checked) d.presentes.push({fid:id, dias:'1'}); else d.presentes = d.presentes.filter(p => p.fid !== id); const s = M.querySelector(`[data-pdias="${id}"]`); if (s) s.disabled = !el.checked; resumo(); }
+    if (el.dataset.pdias) { const p = d.presentes.find(p => p.fid === el.dataset.pdias); if (p) p.dias = el.value; }
+    if (el.dataset.tf === 'funcao') { d.terceiros[+el.dataset.tk].funcao = el.value; resumo(); }
+    if (el.dataset.sf === 'etapaId') { const s = d.servicos[+el.dataset.sk]; s.etapaId = el.value; delete s.pct; servicos(); }
+    if (el.id === 'r_obra') { d.obraId = el.value; d.presentes = S.data.funcionarios.filter(f => f.ativo !== false && f.obraId === d.obraId).map(f => ({fid:f.id, dias:'1'})); d.servicos.forEach(s => { s.etapaId = ''; delete s.pct; }); equipe(); servicos(); }
+    if (el.id === 'r_fin' && el.files.length) {
+      const fs2 = [...el.files].slice(0, 12 - d.fotos.length); if (el.files.length > fs2.length) toast('Máximo de 12 fotos por registro.');
+      for (const file of fs2) { toast('Enviando foto...'); const r = await comprimir(file); const f = {id:gid(), thumb:r.thumb}; await API.put(S.eid, 'fotos', d.id + '_' + f.id, {foto:r.foto}); d.fotos.push(f); fotos(); }
+      el.value = '';
+    }
+  });
+  M.addEventListener('input', e => {
+    const el = e.target;
+    if (el.dataset.tf && el.dataset.tf !== 'funcao') { d.terceiros[+el.dataset.tk][el.dataset.tf] = el.dataset.tf === 'qtd' ? +el.value || '' : el.value; resumo(); }
+    if (el.dataset.sf && el.dataset.sf !== 'etapaId') d.servicos[+el.dataset.sk][el.dataset.sf] = el.dataset.sf === 'pct' ? (el.value === '' ? '' : Math.min(100, Math.max(0, +el.value))) : el.value;
+  });
+  M.addEventListener('click', e => {
+    const t = e.target.closest('[data-trm],[data-srm],[data-frm],[data-fver]'); if (!t) return;
+    if (t.dataset.trm) { d.terceiros.splice(+t.dataset.trm, 1); equipe(); }
+    if (t.dataset.srm) { d.servicos.splice(+t.dataset.srm, 1); servicos(); }
+    if (t.dataset.frm) { const f = d.fotos.splice(+t.dataset.frm, 1)[0]; API.del(S.eid, 'fotos', chaveFoto(d, f)).catch(() => {}); fotos(); }
+    if (t.dataset.fver) verFotoGrande(chaveFoto(d, d.fotos[+t.dataset.fver]));
+  });
+  $('#r_addt').onclick = () => { d.terceiros.push({funcao:'Pedreiro', qtd:1, empresa:''}); equipe(); };
+  $('#r_adds').onclick = () => { d.servicos.push({etapaId:'', descricao:''}); servicos(); const ins = M.querySelectorAll('[data-sf="descricao"]'); ins[ins.length - 1].focus(); };
+  if ($('#r_ok')) $('#r_ok').onclick = async () => {
+    Object.assign(d, {obraId:$('#r_obra').value, data:$('#r_data').value, climaManha:$('#r_cm').value, climaTarde:$('#r_ct').value, expediente:$('#r_exp').value, responsavel:$('#r_resp').value.trim(),
+      texto:$('#r_txt').value.trim(), ocorrencias:$('#r_oc').value.trim(), visitas:$('#r_vis').value.trim(), equipamentos:$('#r_eqp').value.trim(), lancarDiarias:$('#r_lanc').checked});
+    d.servicos = d.servicos.filter(s => (s.descricao || '').trim() || s.etapaId);
+    d.terceiros = d.terceiros.filter(t => +t.qtd > 0);
+    if (!d.obraId || !d.data) return toast('Escolha a obra e a data.');
+    if (!d.texto && !d.servicos.length) return toast('Liste pelo menos um serviço ou escreva uma observação.');
+    d.clima = d.climaManha; d.equipe = totalEquipe(d);
+    delete d.fotoThumb; d.temFoto = d.fotos.length > 0;
+    $('#r_ok').disabled = true;
+    try {
+      await salvar('diario', d);
+      await sincronizarDiarias(d);
+      for (const s of d.servicos) { if (s.etapaId && s.pct !== '' && s.pct != null) { const e = achar('etapas', s.etapaId); if (e && +e.percentual !== +s.pct) await salvar('etapas', {...e, percentual:+s.pct}); } }
+      await syncPortal(d.obraId);
+      fecharModal(); render(); toast('Diário salvo');
+    } catch (err) { console.error(err); toast('Erro ao salvar: ' + err.message); $('#r_ok').disabled = false; }
+  };
+  if ($('#r_unsig')) $('#r_unsig').onclick = async () => { if (!confirm('Remover a assinatura deste RDO para poder editar?')) return; const x = {...achar('diario', d.id)}; delete x.assinaturaResp; await salvar('diario', x); fecharModal(); editorDiario(x); };
+  if ($('#r_del')) $('#r_del').onclick = async () => {
+    if (!confirm('Excluir este registro do diário? As diárias lançadas por ele (ainda não pagas) também serão removidas.')) return;
+    for (const f of d.fotos) API.del(S.eid, 'fotos', chaveFoto(d, f)).catch(() => {});
+    for (const a of S.data.apontamentos.filter(a => a.diarioId === d.id && !a.pago)) await excluir('apontamentos', a.id);
+    await excluir('diario', d.id); await syncPortal(d.obraId); fecharModal(); render(); toast('Excluído');
+  };
+}
+async function sincronizarDiarias(d) {
+  const meus = S.data.apontamentos.filter(a => a.diarioId === d.id);
+  const quer = d.lancarDiarias === false ? [] : d.presentes;
+  for (const a of meus) { if (a.pago) continue; const p = quer.find(p => p.fid === a.funcionarioId); if (!p || a.data !== d.data || a.obraId !== d.obraId) await excluir('apontamentos', a.id); else if (String(a.dias) !== String(p.dias)) await salvar('apontamentos', {...a, dias:p.dias}); }
+  for (const p of quer) {
+    if (S.data.apontamentos.some(a => a.funcionarioId === p.fid && a.data === d.data)) continue;
+    await salvar('apontamentos', {funcionarioId:p.fid, obraId:d.obraId, data:d.data, dias:p.dias || '1', pago:false, diarioId:d.id});
+  }
+}
+function assinarRDO(id) {
+  const d = achar('diario', id);
+  modal(`<h3>Assinar RDO nº ${numRDO(d)} — ${fdata(d.data)}</h3><p style="color:var(--mut);margin-top:0">Assinatura do responsável técnico (engenheiro ou mestre de obras) confirmando as informações do dia.</p>
+    <div class="fld"><label>Nome de quem assina</label><input id="q_nome" value="${esc(d.responsavel || S.perfil.nome || '')}"></div>${HTML_PAD('q_pad')}
+    <div class="mact"><span style="flex:1"></span><button class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri" id="q_ok">Assinar</button></div>`);
+  const pad = padAssinatura($('#q_pad')); $('#q_pad_limpar').onclick = pad.limpar;
+  $('#q_ok').onclick = async () => { const nome = $('#q_nome').value.trim(); if (nome.length < 3) return toast('Digite o nome.'); if (pad.vazio()) return toast('Faça a assinatura no quadro.');
+    await salvar('diario', {...d, responsavel:nome, assinaturaResp:{img:pad.png(), nome, em:new Date().toISOString()}}); fecharModal(); render(); toast('RDO assinado'); };
+}
+function abrirRDO(id) {
+  const d = achar('diario', id), o = achar('obras', d.obraId) || {}, c = achar('clientes', o.clienteId) || {}, E = S.empresa, n = numRDO(d);
+  const pres = (d.presentes || []).map(p => ({f:achar('funcionarios', p.fid), dias:p.dias})).filter(x => x.f);
+  const porF = {}, add = (f, nome, q) => { const x = porF[f] = porF[f] || {n:[], q:0}; x.n.push(nome); x.q += q; };
+  pres.forEach(x => add(x.f.funcao || 'Outro', x.f.nome + (x.dias === '0.5' ? ' (meio período)' : ''), 1));
+  (d.terceiros || []).forEach(t => add(t.funcao || 'Outro', `${t.qtd} terceirizado(s)${t.empresa ? ' — ' + t.empresa : ''}`, +t.qtd || 0));
+  const fs2 = fotosDiario(d);
+  const bloco = (t, v) => v ? `<div class="rb"><h4>${t}</h4><p>${esc(v).replace(/\n/g, '<br>')}</p></div>` : '';
+  const corpo = `<style>.rh{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:3px solid #f08a24;padding-bottom:10px}.rh h1{margin:0;font-size:15pt}.rh p{margin:2px 0 0;color:#6b7280;font-size:9pt}
+    .rh .n{text-align:right}.rh .n b{font-size:13pt;color:#f08a24;display:block}.ri{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.ri div{background:#f6f7f9;border-radius:6px;padding:7px 9px}.ri small{display:block;font-size:7pt;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;font-weight:700}.ri b{font-size:9.5pt}
+    .rt{width:100%;border-collapse:collapse;font-size:9pt;margin-top:6px}.rt th{background:#14181f;color:#fff;text-align:left;padding:5px 8px;font-size:7.5pt;text-transform:uppercase}.rt td{border-bottom:1px solid #e5e7eb;padding:5px 8px;vertical-align:top}
+    .rb{margin-top:12px;page-break-inside:avoid}.rb h4{margin:0 0 4px;font-size:8.5pt;text-transform:uppercase;letter-spacing:.06em;color:#6b7280}.rb p{margin:0;font-size:9.5pt}
+    .rg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}.rg img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:5px}.ras{width:260px;margin:34px 0 0 auto;text-align:center;page-break-inside:avoid}.ras img{height:60px;display:block;margin:0 auto -4px}.ras div{border-top:1px solid #6b7280;padding-top:5px;font-size:9pt;font-weight:600}.ras small{font-size:7.5pt;color:#6b7280}</style>
+    <div class="pg"><div class="rh"><div style="display:flex;gap:10px;align-items:center">${E.logo ? `<img src="${E.logo}" style="max-height:44px;max-width:110px">` : ''}<div><h1>${esc(E.nome)}</h1><p>${[E.cnpj ? 'CNPJ ' + esc(E.cnpj) : '', esc(E.telefone || '')].filter(Boolean).join(' · ')}</p></div></div>
+      <div class="n"><b>RELATÓRIO DIÁRIO DE OBRA</b>RDO nº ${n} · ${fdata(d.data)} (${diaSemana(d.data)})</div></div>
+    <div class="ri"><div style="grid-column:span 2"><small>Obra</small><b>${esc(o.nome || '')}</b></div><div style="grid-column:span 2"><small>Local</small><b>${esc(o.endereco || '—')}</b></div>
+      <div><small>Cliente</small><b>${esc(c.nome || '—')}</b></div><div><small>Clima manhã / tarde</small><b>${esc(d.climaManha || d.clima || '—')} / ${esc(d.climaTarde || d.clima || '—')}</b></div><div><small>Expediente</small><b>${esc(d.expediente || 'Normal')}</b></div><div><small>Efetivo</small><b>${totalEquipe(d) || d.equipe || 0} pessoa(s)</b></div></div>
+    ${Object.keys(porF).length ? `<div class="rb"><h4>Equipe presente</h4><table class="rt"><thead><tr><th style="width:170px">Função</th><th style="width:40px">Qtd.</th><th>Profissionais</th></tr></thead><tbody>${Object.entries(porF).map(([f, x]) => `<tr><td>${esc(f)}</td><td>${x.q}</td><td>${esc(x.n.join(', '))}</td></tr>`).join('')}</tbody></table></div>` : ''}
+    ${(d.servicos || []).length ? `<div class="rb"><h4>Serviços executados</h4><table class="rt"><thead><tr><th style="width:170px">Etapa</th><th>Serviço</th><th style="width:70px">% etapa</th></tr></thead><tbody>${d.servicos.map(s => { const e = achar('etapas', s.etapaId); return `<tr><td>${esc(e ? e.nome : '—')}</td><td>${esc(s.descricao || '')}</td><td>${s.pct !== '' && s.pct != null ? s.pct + '%' : (e ? e.percentual + '%' : '—')}</td></tr>`; }).join('')}</tbody></table></div>` : ''}
+    ${bloco('Observações gerais', d.texto)}${bloco('Ocorrências', d.ocorrencias)}${bloco('Visitas', d.visitas)}${bloco('Equipamentos', d.equipamentos)}
+    ${fs2.length ? `<div class="rb"><h4>Registro fotográfico</h4><div class="rg">${fs2.map(f => `<img src="${f.thumb}" alt="">`).join('')}</div></div>` : ''}
+    <div class="ras">${d.assinaturaResp ? `<img src="${d.assinaturaResp.img}" alt="">` : '<div style="height:60px;border:0"></div>'}<div>${esc(d.responsavel || '')}</div><small>Responsável pelo registro${d.assinaturaResp ? ' · assinado em ' + new Date(d.assinaturaResp.em).toLocaleString('pt-BR') : ''}</small></div></div>`;
+  abrirDocGen(`RDO ${n} - ${o.nome || ''} - ${fdata(d.data)}`, `RDO nº ${n} · ${fdata(d.data)}`, corpo);
+}
+function cardDiario(d) {
+  const r = resumoEquipe(d), fs2 = fotosDiario(d), n = numRDO(d);
+  return `<div class="dia rdo" data-act="edit" data-a="diario" data-b="${d.id}"><div class="dh"><b>RDO nº ${n} · ${fdata(d.data)}</b><small>${diaSemana(d.data)}</small>
+    <span class="cl">${ICO_CLIMA[d.climaManha || d.clima] || ''} ${esc(d.climaManha || d.clima || '')}${d.climaTarde && d.climaTarde !== d.climaManha ? ` → ${ICO_CLIMA[d.climaTarde] || ''} ${esc(d.climaTarde)}` : ''}</span>
+    ${d.expediente && d.expediente !== 'Normal' ? `<span class="badge ${d.expediente === 'Paralisado' ? 'b-bad' : 'b-warn'}">${esc(d.expediente)}</span>` : ''}${d.assinaturaResp ? '<span class="badge b-ok">✓ assinado</span>' : ''}</div>
+    ${r.length ? `<div class="chips">${r.map(x => `<span>${esc(x)}</span>`).join('')}</div>` : (d.equipe ? `<div class="chips"><span>${d.equipe} pessoa(s)</span></div>` : '')}
+    ${(d.servicos || []).length ? `<ul class="sv">${d.servicos.map(s => { const e = achar('etapas', s.etapaId); return `<li>${e ? `<b>${esc(e.nome)}:</b> ` : ''}${esc(s.descricao || '')}${e && s.pct !== '' && s.pct != null ? ` <em>→ ${s.pct}%</em>` : ''}</li>`; }).join('')}</ul>` : ''}
+    ${d.texto ? `<p>${esc(d.texto)}</p>` : ''}${d.ocorrencias ? `<p class="oc">⚠️ ${esc(d.ocorrencias)}</p>` : ''}
+    ${fs2.length ? `<div class="th">${fs2.slice(0, 6).map(f => `<img src="${f.thumb}" alt="">`).join('')}${fs2.length > 6 ? `<span>+${fs2.length - 6}</span>` : ''}</div>` : ''}
+    <div class="row" style="margin-top:10px"><button class="btn sm" data-act="rdoPdf" data-a="${d.id}">RDO em PDF</button>${d.assinaturaResp ? '' : `<button class="btn sm" data-act="rdoAss" data-a="${d.id}">Assinar RDO</button>`}</div></div>`;
+}
+
 /* ===================== AÇÕES ===================== */
 const ACT = {
   nav:a => { S.page = a; S.obraId = null; window.scrollTo(0, 0); render(); },
@@ -1579,14 +1794,18 @@ const ACT = {
       obras:{status:'Em andamento', inicio:hoje()}, diario:{data:hoje(), clima:'Ensolarado', obraId:obraId || S.obraId || ''},
       lancamentos:{tipo:'Pagar', vencimento:hoje(), obraId:obraId || ''}, etapas:{obraId:obraId || '', percentual:0},
       movimentos:{data:hoje(), tipo:'Entrada'}, pedidos:{data:hoje(), status:'Aberto', obraId:obraId || ''},
-      funcionarios:{ativo:true}, apontamentos:{data:hoje(), dias:'1'}, contratos:{assinadoEm:hoje(), parcelas:1, primeiroVenc:hoje()}, materiais:{unidade:'un'}
+      funcionarios:{ativo:true, funcao:'Pedreiro', tipo:'Diarista', diaria:diariaPadrao('Pedreiro'), obraId:S.obraId || ''}, apontamentos:{data:hoje(), dias:'1'}, contratos:{assinadoEm:hoje(), parcelas:1, primeiroVenc:hoje()}, materiais:{unidade:'un'}
     }[col] || {};
     if (col === 'movimentos' && !S.data.materiais.length) return toast('Cadastre um material primeiro.');
     if (col === 'pedidos' && !S.data.fornecedores.length) return toast('Cadastre um fornecedor primeiro.');
     if (['etapas','diario'].includes(col) && !S.data.obras.length) return toast('Cadastre uma obra primeiro.');
+    if (col === 'diario') { if (!base.obraId) base.obraId = (S.data.obras.find(o => o.status === 'Em andamento') || S.data.obras[0]).id; delete base.clima; return editorDiario(base); }
     abrirForm(col, base);
   },
-  edit:(col, id) => { const r = achar(col, id); if (r) abrirForm(col, r); },
+  edit:(col, id) => { const r = achar(col, id); if (!r) return; if (col === 'diario') return editorDiario(r); abrirForm(col, r); },
+  rdoPdf:id => abrirRDO(id),
+  rdoAss:id => assinarRDO(id),
+  salvarDiarias:async () => { const m = {}; document.querySelectorAll('[data-dfun]').forEach(i => { if (i.value !== '') m[i.dataset.dfun] = +i.value; }); await API.setEmpresa(S.eid, {diarias:m}); S.empresa.diarias = m; toast('Diárias salvas'); },
   mov:(mid, tipo) => abrirForm('movimentos', {materialId:mid, tipo, data:hoje()}),
   baixar:async id => { const l = achar('lancamentos', id); await salvar('lancamentos', {...l, pago:true, dataPagamento:hoje()}); render(); toast(l.tipo === 'Receber' ? 'Recebimento registrado' : 'Pagamento registrado'); },
   portal:async id => {
@@ -1797,10 +2016,15 @@ async function renderPortal(token) {
   document.title = p.obraNome + ' — acompanhamento';
   $('#root').innerHTML = `<div class="portal"><div class="phead"><small style="color:var(--pri);font-weight:700;text-transform:uppercase;letter-spacing:.06em">${esc(p.empresaNome)}</small><h1>${esc(p.obraNome)}</h1><p>${esc(p.endereco)}</p>
     <div style="display:flex;align-items:end;gap:18px;margin-top:18px;flex-wrap:wrap"><div><div class="big">${p.progresso}%</div><small style="color:#aab2bd">concluído</small></div><div style="flex:1;min-width:180px"><div class="bar" style="height:12px;border:0;background:#2a313c"><i style="width:${p.progresso}%"></i></div>
-    <div style="display:flex;justify-content:space-between;color:#aab2bd;font-size:12.5px;margin-top:8px"><span>Início ${fdata(p.inicio)}</span><span>Entrega prevista ${fdata(p.previsao)}</span></div></div></div></div>
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 14px;color:#aab2bd;font-size:12.5px;margin-top:8px"><span>Início: <b style="color:#fff">${fdata(p.inicio)}</b></span><span>Entrega prevista: <b style="color:#fff">${fdata(p.previsao)}</b></span></div></div></div></div>
     <div class="card" style="margin-bottom:16px"><h3>Etapas da obra</h3><div class="list">${p.etapas.length ? p.etapas.map(e => `<div class="it"><div style="flex:1"><b>${esc(e.nome)}</b><small>${fdata(e.inicio)} a ${fdata(e.fim)}</small></div><div style="width:150px">${barra(e.percentual, e.percentual >= 100 ? 'g' : '')}</div></div>`).join('') : '<p style="color:var(--mut)">Em breve.</p>'}</div></div>
-    <div class="card"><h3>Diário da obra</h3><div class="diario">${p.diario.length ? p.diario.map(d => `<div class="dia" style="cursor:default">${d.thumb ? `<img src="${d.thumb}" alt="">` : ''}<div><h5>${fdata(d.data)}${d.clima ? ' · ' + esc(d.clima) : ''}</h5><p>${esc(d.texto)}</p></div></div>`).join('') : '<p style="color:var(--mut)">Nenhum registro ainda.</p>'}</div></div>
+    ${(() => { const u = p.diario.find(d => (d.equipe || []).length || d.total); return u ? `<div class="card" style="margin-bottom:16px"><h3>👷 Equipe na obra</h3><p style="margin:-6px 0 10px;color:var(--mut);font-size:13px">${u.data === hoje() ? 'Hoje' : 'Último registro: ' + fdata(u.data)} · ${u.total} profissional(is)</p><div class="chips">${(u.equipe || []).map(x => `<span>${esc(x)}</span>`).join('') || `<span>${u.total} pessoa(s)</span>`}</div></div>` : ''; })()}
+    ${(() => { const g = p.diario.flatMap(d => (d.fotos || (d.thumb ? [d.thumb] : [])).map(f => ({f, data:d.data}))); return g.length ? `<div class="card" style="margin-bottom:16px"><h3>📷 Fotos da obra</h3><div class="gal">${g.map(x => `<img src="${x.f}" data-zoom alt="Foto de ${fdata(x.data)}" title="${fdata(x.data)}">`).join('')}</div></div>` : ''; })()}
+    <div class="card"><h3>Diário da obra</h3><div class="diario">${p.diario.length ? p.diario.map(d => `<div class="dia rdo" style="cursor:default"><div class="dh"><b>${fdata(d.data)}</b><small>${diaSemana(d.data)}</small>${d.clima ? `<span class="cl">${ICO_CLIMA[d.clima] || ''} ${esc(d.clima)}</span>` : ''}</div>
+      ${(d.equipe || []).length ? `<div class="chips">${d.equipe.map(x => `<span>${esc(x)}</span>`).join('')}</div>` : ''}<p style="white-space:pre-line">${esc(d.texto)}</p>
+      ${(d.fotos || (d.thumb ? [d.thumb] : [])).length ? `<div class="th">${(d.fotos || [d.thumb]).map(f => `<img src="${f}" data-zoom alt="">`).join('')}</div>` : ''}</div>`).join('') : '<p style="color:var(--mut)">Nenhum registro ainda.</p>'}</div></div>
     <p style="text-align:center;color:var(--mut);font-size:12.5px;margin-top:20px">Atualizado em ${new Date(p.atualizadoEm).toLocaleString('pt-BR')}${p.empresaTel ? ` · <a target="_blank" href="${wa(p.empresaTel, 'Olá! Tenho uma dúvida sobre a obra ' + p.obraNome + '.')}">Falar com a construtora</a>` : ''}</p></div>`;
+  document.addEventListener('click', e => { const z = e.target.closest('[data-zoom]'); if (z) { const o = document.createElement('div'); o.className = 'zoom'; o.innerHTML = `<img src="${z.src}" alt="">`; o.onclick = () => o.remove(); document.body.appendChild(o); } });
 }
 
 /* ===================== DADOS DE EXEMPLO ===================== */
@@ -1820,8 +2044,6 @@ async function dadosExemplo() {
     [o3, 'Projeto e aprovações', 0, 60, 80000, 35]
   ];
   for (const [o, nome, i, f, c, p] of et) await sv('etapas', {obraId:o.id, nome, inicio:d(i), fim:d(f), custoPrevisto:c, percentual:p});
-  for (const [o, n, t, cl, eq] of [[o1, -1, 'Alvenaria do pavimento superior: paredes dos quartos 1 e 2 concluídas. Recebido o cimento do pedido da semana.', 'Ensolarado', 6], [o1, -2, 'Passagem de eletrodutos na laje e caixas de luz da sala e cozinha.', 'Nublado', 5], [o1, -4, 'Chuva forte à tarde, serviço interrompido às 14h. Equipe adiantou organização do canteiro.', 'Chuvoso', 4], [o2, -1, 'Troca do quadro de distribuição e fiação do salão principal.', 'Ensolarado', 3]])
-    await sv('diario', {obraId:o.id, data:d(n), texto:t, clima:cl, equipe:eq});
   const f1 = await sv('fornecedores', {nome:'Depósito Material Forte', cnpj:'11.222.333/0001-44', telefone:'(88) 99111-2233', categoria:'Cimento, areia, tijolo'});
   const f2 = await sv('fornecedores', {nome:'Aço Nordeste', telefone:'(88) 99444-5566', categoria:'Ferragens e aço'});
   const f3 = await sv('fornecedores', {nome:'Elétrica Cariri', telefone:'(88) 99333-7788', categoria:'Material elétrico'});
@@ -1839,9 +2061,20 @@ async function dadosExemplo() {
   for (let i = 0; i < 10; i++) { const v = addMes(d(-90), i); await sv('lancamentos', {tipo:'Receber', categoria:'Medição / Parcela do cliente', descricao:`Contrato 2026-014 — parcela ${i + 1}/10 (Marcos Antônio Silva)`, obraId:o1.id, valor:38500, vencimento:v, pago:v < h, dataPagamento:v < h ? v : '', contratoId:ct.id}); }
   await L('Receber', 'Medição / Parcela do cliente', 'Reforma Loja Centro — entrada', o2, 30000, -30, true); await L('Receber', 'Medição / Parcela do cliente', 'Reforma Loja Centro — 2ª medição', o2, 31000, 7, false);
   const fs_ = [];
-  for (const [nome, func, di, o] of [['João Batista', 'Pedreiro', 180, o1], ['Carlos Henrique', 'Servente', 110, o1], ['Francisco Alves', 'Pedreiro', 180, o1], ['Pedro Lima', 'Eletricista', 200, o2], ['Luiz Gonzaga', 'Mestre de obras', 260, o1]])
-    fs_.push(await sv('funcionarios', {nome, funcao:func, diaria:di, obraId:o.id, ativo:true, telefone:'(88) 9' + Math.floor(1e7 + Math.random() * 8e7)}));
-  for (let n = 1; n <= 4; n++) for (const f of fs_) if (!(f.funcao === 'Mestre de obras' && n === 4)) await sv('apontamentos', {funcionarioId:f.id, obraId:f.obraId, data:d(-n), dias:n === 4 && f.funcao === 'Servente' ? '0.5' : '1', pago:false});
+  for (const [nome, func, di, o, extra] of [['João Batista', 'Pedreiro', 180, o1, {nr35:d(12)}], ['Carlos Henrique', 'Ajudante / Servente', 110, o1, {}], ['Francisco Alves', 'Pedreiro', 180, o1, {}], ['Pedro Lima', 'Eletricista', 200, o2, {nr35:d(-5)}], ['Luiz Gonzaga', 'Mestre de obras', 260, o1, {}], ['Antônio Pereira', 'Ajudante / Servente', 110, o1, {}]])
+    fs_.push(await sv('funcionarios', {nome, funcao:func, tipo:'Diarista', diaria:di, obraId:o.id, ativo:true, telefone:'(88) 9' + Math.floor(1e7 + Math.random() * 8e7), ...extra}));
+  const e1 = S.data.etapas.filter(e => e.obraId === o1.id), eN = n => (e1.find(e => e.nome.startsWith(n)) || {}).id || '';
+  const time1 = fs_.filter(f => f.obraId === o1.id);
+  for (const [n, cm, ct, exp, serv, txt, oc, terc] of [
+    [-1, 'Ensolarado', 'Ensolarado', 'Normal', [[eN('Alvenaria'), 'Paredes dos quartos 1 e 2 do pavimento superior', 70], [eN('Instalações'), 'Caixas de luz da sala e cozinha', 25]], 'Recebido o cimento do pedido da semana.', '', [{funcao:'Eletricista', qtd:1, empresa:'Elétrica Cariri'}]],
+    [-2, 'Nublado', 'Nublado', 'Normal', [[eN('Instalações'), 'Passagem de eletrodutos na laje', 20], [eN('Alvenaria'), 'Vergas e contravergas das janelas', 64]], '', '', []],
+    [-4, 'Ensolarado', 'Chuvoso', 'Parcial', [[eN('Alvenaria'), 'Elevação das paredes da cozinha', 58]], 'Equipe adiantou a organização do canteiro.', 'Chuva forte às 14h, serviço externo interrompido.', []]]) {
+    const pres = time1.filter((f, i) => !(n === -4 && i === 4)).map(f => ({fid:f.id, dias:n === -4 && f.funcao === 'Ajudante / Servente' ? '0.5' : '1'}));
+    await sv('diario', {obraId:o1.id, data:d(n), climaManha:cm, climaTarde:ct, clima:cm, expediente:exp, presentes:pres, terceiros:terc, servicos:serv.map(([etapaId, descricao, pct]) => ({etapaId, descricao, pct})),
+      texto:txt, ocorrencias:oc, visitas:n === -2 ? 'Visita do cliente às 10h para ver o andamento.' : '', equipamentos:'Betoneira, andaimes', responsavel:'Luiz Gonzaga', fotos:[], lancarDiarias:true, equipe:pres.length + terc.reduce((s, t) => s + t.qtd, 0)});
+  }
+  await sv('diario', {obraId:o2.id, data:d(-1), climaManha:'Ensolarado', climaTarde:'Ensolarado', clima:'Ensolarado', expediente:'Normal', presentes:fs_.filter(f => f.obraId === o2.id).map(f => ({fid:f.id, dias:'1'})), terceiros:[], servicos:[{etapaId:(S.data.etapas.find(e => e.obraId === o2.id && e.nome.startsWith('Elétrica')) || {}).id || '', descricao:'Troca do quadro de distribuição e fiação do salão', pct:60}], texto:'', fotos:[], responsavel:'Pedro Lima', equipe:1});
+  for (const dd of S.data.diario) for (const p of dd.presentes || []) if (!S.data.apontamentos.some(a => a.funcionarioId === p.fid && a.data === dd.data)) await sv('apontamentos', {funcionarioId:p.fid, obraId:dd.obraId, data:dd.data, dias:p.dias, pago:false, diarioId:dd.id});
   const it = (etapa, descricao, unidade, qtd, valor) => ({etapa, descricao, unidade, qtd, valor});
   await sv('orcamentos', {numero:'ORC-' + h.slice(0, 4) + '-001', clienteId:'', clienteNome:'Roberto Almeida', clienteTel:'(88) 99654-3210', titulo:'Construção de residência térrea 110 m²', endereco:'Rua Nova, Lote 7', data:d(-3), validadeDias:15, prazo:'150 dias após o início', status:'Enviado', bdiPct:22, descontoPct:3,
     condicoes:'Entrada de 30% na assinatura do contrato e o restante em 5 parcelas mensais conforme medição.', obs:'Inclusos: material e mão de obra descritos.\nNão inclusos: projetos, taxas da prefeitura e móveis planejados.',
