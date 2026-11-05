@@ -32,6 +32,10 @@ Itens por etapa com o seu custo, BDI/margem e desconto. "Salvar e gerar PDF" abr
 
 Em Clientes → Contratos, botão **Assinar**: enviar o link para o cliente assinar pelo celular, ou assinar na hora com o dedo. O modelo do contrato (com campos automáticos {{CLIENTE}}, {{VALOR}}...) e a assinatura da construtora ficam em Configurações. Cada assinatura registra nome, CPF, data/hora e aparelho.
 
+## Vistoria e entrega da obra
+
+Na obra, aba **Vistoria e entrega**: checklist por ambiente (OK / Pendente / N/A, observação e foto), documento em PDF e assinatura do cliente (na hora ou por link). Ao assinar o termo de entrega, a obra fica como Concluída.
+
 ## Testar agora
 
 Abra o `app/index.html` no navegador e clique em **Entrar com dados de exemplo**. Sem o Firebase configurado ele roda em modo demonstração (dados só naquele navegador).

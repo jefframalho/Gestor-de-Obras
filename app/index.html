@@ -125,6 +125,13 @@ tbody tr:hover{background:var(--soft)}
 .padl{position:absolute;left:14px;bottom:44px;right:14px;border-top:1px solid #cbd5e1;padding-top:4px;font-size:11.5px;color:#94a3b8;pointer-events:none}
 .padw .btn{position:absolute;right:8px;top:8px}
 .ctprev{max-height:230px;overflow-y:auto;white-space:pre-wrap;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:12.5px;margin-bottom:14px}
+.amb{border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}.ambh{display:flex;gap:10px;align-items:center;background:var(--soft);padding:9px 12px;border-bottom:1px solid var(--line)}.ambh span{color:var(--mut);font-size:12px;margin-right:auto}
+.vit{display:grid;grid-template-columns:1.3fr auto 1.4fr auto;gap:8px;align-items:center;padding:8px 12px;border-top:1px solid var(--line)}.vit:first-of-type{border-top:0}
+.vit input{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);width:100%}.vit .vn input{border-color:transparent;background:transparent;font-weight:600}.vit .vn input:focus{border-color:var(--line);background:var(--bg)}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}.seg button{border:0;background:var(--card);padding:7px 11px;font-weight:700;font-size:12px;cursor:pointer;color:var(--mut);border-left:1px solid var(--line)}.seg button:first-child{border-left:0}
+.seg button.on.ok{background:var(--ok);color:#fff}.seg button.on.pend{background:var(--bad);color:#fff}.seg button.on.na{background:var(--mut);color:#fff}
+.vf{display:flex;gap:6px;align-items:center}.vf img{width:46px;height:36px;object-fit:cover;border-radius:6px;cursor:pointer}.vf label.btn{cursor:pointer}
+@media (max-width:860px){.vit{grid-template-columns:1fr auto}.vit .vo{grid-column:1/-1}.vit .vf{grid-column:1/-1;justify-content:flex-end}}
 .opcs{display:grid;gap:10px}.opc{text-align:left;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:14px 16px;cursor:pointer}.opc:hover{border-color:var(--pri);background:var(--priSoft)}.opc b{display:block;font-size:14.5px;margin-bottom:2px}.opc span{color:var(--mut);font-size:13px}
 .tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}.tags code{background:var(--priSoft);color:var(--pri2);padding:2px 7px;border-radius:6px;font-size:11.5px;cursor:pointer}
 table.itens td{padding:5px 6px}table.itens input,table.itens select{padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);width:100%}
@@ -321,7 +328,7 @@ const API = {
 };
 
 /* ---------- estado ---------- */
-const COLS = ['obras','etapas','diario','lancamentos','fornecedores','materiais','movimentos','pedidos','funcionarios','apontamentos','clientes','contratos','orcamentos'];
+const COLS = ['obras','etapas','diario','lancamentos','fornecedores','materiais','movimentos','pedidos','funcionarios','apontamentos','clientes','contratos','orcamentos','vistorias'];
 const S = {uid:null, email:'', perfil:null, eid:null, empresa:null, data:{}, page:'dashboard', obraId:null, tab:{}, filtro:{}};
 const PAPEIS = {admin:'Administrador', engenheiro:'Engenheiro / Mestre de obras', financeiro:'Financeiro'};
 const PERM = {
@@ -652,7 +659,7 @@ function pgObra() {
   const o = achar('obras', S.obraId); if (!o) { S.page = 'obras'; return pgObras(); }
   const fin = pode('financeiro'), p = progressoObra(o.id), g = gastoObra(o.id), ap = aPagarObra(o.id), orc = +o.orcamento || 0, rec = recebidoObra(o.id);
   const et = S.data.etapas.filter(e => e.obraId === o.id).sort((a, b) => (a.inicio || '9').localeCompare(b.inicio || '9'));
-  const abas = [['etapas','Etapas e cronograma'], ['diario','Diário de obra'], ...(fin ? [['fin','Financeiro']] : []), ['mat','Materiais'], ['eq','Equipe']];
+  const abas = [['etapas','Etapas e cronograma'], ['diario','Diário de obra'], ...(fin ? [['fin','Financeiro']] : []), ['mat','Materiais'], ['eq','Equipe'], ['vist','Vistoria e entrega']];
   const at = tabAt('obra', 'etapas');
   let corpo = '';
   if (at === 'etapas') corpo = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="etapas" data-b="${o.id}">+ Etapa</button></div>${gantt(et)}`
@@ -664,6 +671,8 @@ function pgObra() {
   } else if (at === 'fin') {
     const ls = lancObra(o.id).sort((a, b) => b.vencimento.localeCompare(a.vencimento));
     corpo = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="lancamentos" data-b="${o.id}">+ Lançamento</button></div>` + tabelaLanc(ls);
+  } else if (at === 'vist') {
+    corpo = abaVistorias(o);
   } else if (at === 'mat') {
     corpo = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn" data-act="novo" data-a="movimentos">Entrada / saída</button><button class="btn pri" data-act="novo" data-a="pedidos" data-b="${o.id}">+ Pedido de compra</button></div>`
       + `<h3 style="font-size:14px">Materiais nesta obra</h3>` + tabelaMat(S.data.materiais.filter(m => m.obraId === o.id))
@@ -682,7 +691,7 @@ function pgObra() {
     ${fin ? `<div class="kpi"><span>Orçamento</span><b>${brl(orc)}</b></div>
     <div class="kpi ${orc && g + ap > orc ? 'alert' : ''}"><span>Gasto (pago)</span><b>${brl(g)}</b><small>+ ${brl(ap)} a pagar${orc ? ` · ${Math.round((g + ap) / orc * 100)}% do orçamento` : ''}</small></div>
     <div class="kpi"><span>Recebido do cliente</span><b style="color:var(--ok)">${brl(rec)}</b><small>lucro de caixa: ${brl(rec - g)}</small></div>` : ''}
-    <div class="kpi"><span>Prazo</span><b>${o.previsao ? (o.status === 'Concluída' ? 'Entregue' : diasAte(o.previsao) >= 0 ? diasAte(o.previsao) + ' dias' : 'Atrasada') : '—'}</b><small>${o.previsao ? 'entrega ' + fdata(o.previsao) : 'sem previsão'}</small></div></div>`
+    <div class="kpi"><span>Prazo</span><b>${o.previsao ? (o.status === 'Concluída' ? 'Entregue' : diasAte(o.previsao) >= 0 ? diasAte(o.previsao) + ' dias' : 'Atrasada') : '—'}</b><small>${o.status === 'Concluída' && o.entregueEm ? 'entregue em ' + fdata(o.entregueEm) : o.previsao ? 'entrega ' + fdata(o.previsao) : 'sem previsão'}</small></div></div>`
   + tabs('obra', abas) + corpo;
 }
 
@@ -1073,17 +1082,17 @@ function preencherContrato(ct) {
   return base.replace(/\{\{([A-Z_]+)\}\}/g, (m, k) => k in v ? (v[k] || '__________') : m);
 }
 /* Documento do contrato (usado pela construtora e pela página pública de assinatura) */
-function htmlContratoCorpo(d) {
+function htmlContratoCorpo(d, comFoto) {
   const linhas = esc(d.texto).split('\n').map(l => { const t = l.trim();
-    if (/^CONTRATO DE/.test(t)) return `<p class="tit">${l}</p>`;
+    if (/^(CONTRATO DE|TERMO DE|RELATÓRIO DE)/.test(t)) return `<p class="tit">${l}</p>`;
     if (/^CLÁUSULA/.test(t)) return `<p class="cl">${l}</p>`;
     if (/^(CONTRATADA|CONTRATANTE):/.test(t)) return `<p>${l.replace(/^(\s*)(CONTRATADA:|CONTRATANTE:)/, '$1<b>$2</b>')}</p>`;
     return `<p>${l || '&nbsp;'}</p>`; }).join('');
   const assin = (img, nome, info) => `<div class="as">${img ? `<img src="${img}" alt="">` : '<div class="vz"></div>'}<div class="ln">${esc(nome || '')}</div>${info ? `<small>${info}</small>` : ''}</div>`;
   const a = d.assinatura;
-  return `<div class="pg">${d.logo ? `<img class="lg" src="${d.logo}" alt="">` : ''}<div class="txt">${linhas}</div>
+  return `<div class="pg">${d.logo ? `<img class="lg" src="${d.logo}" alt="">` : ''}<div class="txt">${linhas}</div>${d.checklist && d.checklist.length ? htmlChecklist(d.checklist, comFoto) : ''}
   <div class="ass">${assin(d.assinaturaEmpresa, d.empresaNome, 'CONTRATADA')}${assin(a && a.img, a ? a.nome : d.clienteNome, a ? `CONTRATANTE · CPF ${esc(a.cpf)}<br>Assinado eletronicamente em ${new Date(a.em).toLocaleString('pt-BR')}` : 'CONTRATANTE')}</div>
-  ${a ? `<div class="reg">Registro da assinatura eletrônica: ${esc(a.nome)} (CPF ${esc(a.cpf)}) aceitou e assinou este contrato em ${new Date(a.em).toLocaleString('pt-BR')} ${a.modo === 'link' ? 'pelo link enviado pela contratada' : 'presencialmente, no dispositivo da contratada'}. Contrato nº ${esc(d.numero || '')}.</div>` : ''}</div>`;
+  ${a ? `<div class="reg">Registro da assinatura eletrônica: ${esc(a.nome)} (CPF ${esc(a.cpf)}) aceitou e assinou este ${esc(d.docNome || 'contrato')} em ${new Date(a.em).toLocaleString('pt-BR')} ${a.modo === 'link' ? 'pelo link enviado pela contratada' : 'presencialmente, no dispositivo da contratada'}. Referência: ${esc(d.numero || '')}.</div>` : ''}</div>`;
 }
 const CSS_CONTRATO = `@page{size:A4;margin:16mm 16mm 18mm}
 .pg{max-width:210mm;margin:18px auto;background:#fff;padding:16mm;box-shadow:0 4px 30px rgba(0,0,0,.12);font:10.5pt/1.55 Inter,Arial,sans-serif;color:#16191f}
@@ -1183,7 +1192,10 @@ async function checarAssinaturas() {
   for (const ct of S.data.contratos.filter(x => x.assinaturaToken && !x.assinatura)) {
     try { const d = await API.getAssinatura(ct.assinaturaToken); if (d && d.status === 'assinado' && d.assinatura) { await salvar('contratos', {...achar('contratos', ct.id), assinatura:d.assinatura, assinadoEm:(d.assinatura.em || '').slice(0, 10) || hoje()}); mudou = true; } } catch (e) { console.warn(e); }
   }
-  if (mudou) { toast('Contrato assinado pelo cliente!'); if (!$('#ov')) render(); }
+  for (const vi of S.data.vistorias.filter(x => x.assinaturaToken && !x.assinatura)) {
+    try { const d = await API.getAssinatura(vi.assinaturaToken); if (d && d.status === 'assinado' && d.assinatura) { const x = await salvar('vistorias', {...achar('vistorias', vi.id), assinatura:d.assinatura}); await aposAssinarVistoria(x); mudou = true; } } catch (e) { console.warn(e); }
+  }
+  if (mudou) { toast('Documento assinado pelo cliente!'); if (!$('#ov')) render(); }
 }
 function modeloContrato() {
   const atual = S.empresa.modeloContrato || CONTRATO_PADRAO;
@@ -1215,20 +1227,20 @@ function assinaturaEmpresa() {
 /* Página pública: o cliente assina pelo link */
 async function renderAssinar(tk) {
   document.title = 'Assinatura de contrato';
-  const st = document.createElement('style'); st.textContent = CSS_CONTRATO + `.sgn{max-width:210mm;margin:0 auto 40px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}.sgn h3{margin:0 0 12px}.top2{background:var(--side);color:#fff;padding:14px 18px;font-weight:700;display:flex;gap:10px;align-items:center}`; document.head.appendChild(st);
+  const st = document.createElement('style'); st.textContent = CSS_CONTRATO + CSS_CK + `.sgn{max-width:210mm;margin:0 auto 40px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}.sgn h3{margin:0 0 12px}.top2{background:var(--side);color:#fff;padding:14px 18px;font-weight:700;display:flex;gap:10px;align-items:center}`; document.head.appendChild(st);
   $('#root').innerHTML = '<div class="boot"><div><div class="spin"></div><span>Carregando contrato...</span></div></div>';
   let d = null; try { d = await API.getAssinatura(tk); } catch (e) { console.error(e); }
   if (!d || d.status === 'cancelado') { $('#root').innerHTML = '<div class="portal"><div class="vazio">Este link de assinatura não está mais disponível. Fale com a construtora.</div></div>'; return; }
   const desenha = () => {
     const assinado = d.status === 'assinado';
-    $('#root').innerHTML = `<div class="top2 noprint"><div class="logo" style="width:30px;height:30px">${ico('logo')}</div><span style="flex:1">${esc(d.empresaNome)} · Contrato ${esc(d.numero)}</span>${assinado ? '<button class="btn sm" onclick="print()">Salvar PDF</button>' : ''}</div>
-      ${assinado ? '<div class="banner info noprint" style="max-width:210mm;margin:16px auto 0;background:var(--okSoft);color:var(--ok)"><b>Contrato assinado com sucesso.</b> Você pode salvar uma cópia em PDF no botão acima.</div>' : ''}
+    $('#root').innerHTML = `<div class="top2 noprint"><div class="logo" style="width:30px;height:30px">${ico('logo')}</div><span style="flex:1">${esc(d.empresaNome)} · ${esc(d.docNome ? d.docNome[0].toUpperCase() + d.docNome.slice(1) : 'Contrato')} ${esc(d.numero)}</span>${assinado ? '<button class="btn sm" onclick="print()">Salvar PDF</button>' : ''}</div>
+      ${assinado ? '<div class="banner info noprint" style="max-width:210mm;margin:16px auto 0;background:var(--okSoft);color:var(--ok)"><b>Documento assinado com sucesso.</b> Você pode salvar uma cópia em PDF no botão acima.</div>' : ''}
       ${htmlContratoCorpo(d)}
-      ${assinado ? '' : `<div class="sgn noprint"><h3>Assinar contrato</h3>
+      ${assinado ? '' : `<div class="sgn noprint"><h3>Assinar ${esc(d.docNome || 'contrato')}</h3>
         <div class="f2"><div class="fld"><label>Seu nome completo</label><input id="p_nome" value="${esc(d.clienteNome)}"></div><div class="fld"><label>Seu CPF</label><input id="p_cpf" inputmode="numeric" placeholder="000.000.000-00"></div></div>
         ${HTML_PAD('p_pad')}
-        <label class="chk" style="margin:12px 0"><input type="checkbox" id="p_ok"> Li e concordo com todas as cláusulas deste contrato.</label>
-        <button class="btn pri" id="p_go" style="width:100%;justify-content:center;padding:13px">Assinar contrato</button></div>`}`;
+        <label class="chk" style="margin:12px 0"><input type="checkbox" id="p_ok"> Li e concordo com ${d.docNome ? 'este ' + esc(d.docNome) : 'todas as cláusulas deste contrato'}.</label>
+        <button class="btn pri" id="p_go" style="width:100%;justify-content:center;padding:13px">Assinar</button></div>`}`;
     if (assinado) return;
     const pad = padAssinatura($('#p_pad')); $('#p_pad_limpar').onclick = pad.limpar;
     $('#p_go').onclick = async () => {
@@ -1240,10 +1252,192 @@ async function renderAssinar(tk) {
       $('#p_go').disabled = true; $('#p_go').textContent = 'Enviando...';
       const assinatura = {img:pad.png(), nome, cpf, em:new Date().toISOString(), modo:'link', dispositivo:navigator.userAgent.slice(0, 160)};
       try { await API.updAssinatura(tk, {status:'assinado', assinatura}); d.status = 'assinado'; d.assinatura = assinatura; window.scrollTo(0, 0); desenha(); }
-      catch (e) { console.error(e); toast('Não foi possível enviar. Verifique a internet e tente de novo.'); $('#p_go').disabled = false; $('#p_go').textContent = 'Assinar contrato'; }
+      catch (e) { console.error(e); toast('Não foi possível enviar. Verifique a internet e tente de novo.'); $('#p_go').disabled = false; $('#p_go').textContent = 'Assinar'; }
     };
   };
   desenha();
+}
+
+/* ===================== VISTORIA E ENTREGA DA OBRA ===================== */
+const CHECK_PADRAO = {
+  'Área externa':['Fachada e pintura externa','Muros e portão','Calçada e entrada','Telhado, calhas e rufos'],
+  'Sala':['Paredes e pintura','Piso e rodapé','Portas e fechaduras','Janelas e vidros','Tomadas e interruptores','Iluminação'],
+  'Cozinha':['Paredes e revestimento','Piso','Bancada e pia','Torneiras sem vazamento','Ralos escoando','Pontos elétricos'],
+  'Banheiros':['Revestimento e rejunte','Louças fixas','Chuveiro e torneiras','Descarga funcionando','Ralo e caimento do piso','Ventilação'],
+  'Quartos':['Paredes e pintura','Piso e rodapé','Portas e janelas','Tomadas, interruptores e iluminação'],
+  'Instalações':['Quadro de disjuntores identificado','Caixa d\'água limpa e tampada','Pressão da água','Esgoto sem retorno ou mau cheiro','Medidores de água e energia'],
+  'Geral':['Limpeza final da obra','Entrega das chaves','Manual do proprietário e garantias']
+};
+const TIPOS_VIST = ['Entrega da obra','Vistoria intermediária'];
+const ST_ITEM = {ok:['OK','b-ok'], pend:['Pendente','b-bad'], na:['N/A','b-mut']};
+const TERMO_ENTREGA = `TERMO DE ENTREGA E RECEBIMENTO DE OBRA
+
+Pelo presente termo, CONTRATANTE: {{CLIENTE}}, CPF/CNPJ {{CPF_CLIENTE}}, declara ter recebido de CONTRATADA: {{EMPRESA}}, CNPJ {{CNPJ_EMPRESA}}, a obra "{{OBRA}}", localizada em {{ENDERECO_OBRA}}, após vistoria realizada em conjunto em {{DATA_VISTORIA}}, conforme a lista de verificação abaixo.
+
+{{PENDENCIAS}}
+
+A partir desta data, a CONTRATANTE assume a guarda, a conservação e a manutenção do imóvel, permanecendo a CONTRATADA responsável pela garantia legal da obra nos termos do art. 618 do Código Civil. Danos causados por mau uso, falta de manutenção ou alterações feitas por terceiros não são cobertos pela garantia.
+
+{{CIDADE}}, {{DATA}}.`;
+const TERMO_VISTORIA = `RELATÓRIO DE VISTORIA DE OBRA
+
+CONTRATADA: {{EMPRESA}}, CNPJ {{CNPJ_EMPRESA}}.
+CONTRATANTE: {{CLIENTE}}, CPF/CNPJ {{CPF_CLIENTE}}.
+
+Vistoria da obra "{{OBRA}}", localizada em {{ENDERECO_OBRA}}, realizada em {{DATA_VISTORIA}} com o acompanhamento das partes, conforme a lista de verificação abaixo.
+
+{{PENDENCIAS}}
+
+As partes declaram estar cientes do estado da obra na data desta vistoria.
+
+{{CIDADE}}, {{DATA}}.`;
+const contaVist = v => { const c = {ok:0, pend:0, na:0, nada:0}; (v.itens || []).forEach(i => { c[i.status || 'nada']++; }); return c; };
+const statusVist = v => v.assinatura ? 'Assinada' : v.assinaturaToken ? 'Aguardando assinatura' : (contaVist(v).nada ? 'Em andamento' : 'Pronta para assinar');
+const badgeVist = v => { const s = statusVist(v); return `<span class="badge ${({Assinada:'b-ok', 'Aguardando assinatura':'b-warn', 'Pronta para assinar':'b-info'})[s] || 'b-mut'}">${s}</span>`; };
+function textoVistoria(v) {
+  const E = S.empresa, o = achar('obras', v.obraId) || {}, c = achar('clientes', o.clienteId) || {};
+  const pend = (v.itens || []).filter(i => i.status === 'pend');
+  const P = pend.length ? `Ficam registradas as seguintes pendências${v.tipo === 'Entrega da obra' ? `, que a CONTRATADA se compromete a corrigir em até ${v.prazoPend || '15 dias'}` : ''}:\n` + pend.map((i, k) => `${k + 1}) ${i.ambiente} – ${i.item}${i.obs ? ': ' + i.obs : ''}`).join('\n')
+    : (v.tipo === 'Entrega da obra' ? 'A obra foi vistoriada e recebida sem pendências.' : 'Não foram encontradas pendências nesta vistoria.');
+  const val = {EMPRESA:E.nome, CNPJ_EMPRESA:E.cnpj, CIDADE:E.cidade, CLIENTE:c.nome, CPF_CLIENTE:c.cpfCnpj, OBRA:o.nome, ENDERECO_OBRA:o.endereco, DATA_VISTORIA:fdata(v.data), PENDENCIAS:P, DATA:dataExtenso(v.data)};
+  return (v.tipo === 'Entrega da obra' ? TERMO_ENTREGA : TERMO_VISTORIA).replace(/\{\{([A-Z_]+)\}\}/g, (m, k) => k in val ? (val[k] || '__________') : m);
+}
+function htmlChecklist(itens, comFoto) {
+  const g = {}; (itens || []).forEach(i => { (g[i.ambiente] = g[i.ambiente] || []).push(i); });
+  return `<table class="ck"><thead><tr><th>Item verificado</th><th style="width:78px">Situação</th><th>Observação</th>${comFoto ? '<th style="width:80px">Foto</th>' : ''}</tr></thead><tbody>${Object.entries(g).map(([amb, its]) =>
+    `<tr class="gr"><td colspan="${comFoto ? 4 : 3}">${esc(amb)}</td></tr>` + its.map(i => { const s = ST_ITEM[i.status] || ['—', '']; return `<tr><td>${esc(i.item)}</td><td><span class="st ${i.status || ''}">${s[0]}</span></td><td>${esc(i.obs || '')}</td>${comFoto ? `<td>${i.fotoThumb ? `<img src="${i.fotoThumb}" alt="">` : ''}</td>` : ''}</tr>`; }).join('')).join('')}</tbody></table>`;
+}
+const CSS_CK = `.ck{width:100%;border-collapse:collapse;font-size:9pt;margin-top:14px}.ck th{background:#14181f;color:#fff;text-align:left;padding:6px 8px;font-size:7.5pt;text-transform:uppercase;letter-spacing:.05em}
+.ck td{padding:5px 8px;border-bottom:1px solid #e5e7eb;vertical-align:middle}.ck tr.gr td{background:#fff3e6;color:#9a4f08;font-weight:700}.ck tr{page-break-inside:avoid}.ck thead{display:table-header-group}
+.ck img{width:70px;height:52px;object-fit:cover;border-radius:4px;display:block}.st{font-weight:700;font-size:8pt;padding:1px 7px;border-radius:99px;background:#f3f4f6;color:#6b7280}.st.ok{background:#e8f7ee;color:#16a34a}.st.pend{background:#fdecec;color:#dc2626}`;
+function dadosDocVist(v) {
+  const o = achar('obras', v.obraId) || {}, c = achar('clientes', o.clienteId) || {};
+  return {texto:v.textoFinal || textoVistoria(v), empresaNome:S.empresa.nome, logo:S.empresa.logo || '', assinaturaEmpresa:v.assinaturaEmpresa || S.empresa.assinatura || '', clienteNome:c.nome,
+    numero:(o.nome || '') + ' · ' + fdata(v.data), assinatura:v.assinatura || null, docNome:v.tipo === 'Entrega da obra' ? 'termo de entrega' : 'relatório de vistoria', checklist:v.itens || []};
+}
+function abrirDocVistoria(v) {
+  const w = window.open('', '_blank'); if (!w) return toast('Libere as janelas pop-up do navegador.');
+  const o = achar('obras', v.obraId) || {};
+  w.document.open(); w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(v.tipo)} - ${esc(o.nome || '')}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"><style>body{margin:0;background:#e9ebef;-webkit-print-color-adjust:exact;print-color-adjust:exact}${CSS_CONTRATO}${CSS_CK}
+  .bar{position:sticky;top:0;background:#14181f;color:#fff;padding:10px 16px;display:flex;gap:8px;align-items:center;font:600 14px Inter,sans-serif;z-index:2}.bar b{flex:1}.bar button{border:0;border-radius:8px;padding:9px 14px;font:600 13px Inter,sans-serif;cursor:pointer;background:#fff}.bar .p{background:#f08a24;color:#fff}</style></head>
+  <body><div class="bar noprint"><b>${esc(v.tipo)} · ${statusVist(v)}</b><button class="p" onclick="print()">Salvar PDF / Imprimir</button><button onclick="close()">Fechar</button></div>${htmlContratoCorpo(dadosDocVist(v), true)}</body></html>`);
+  w.document.close();
+}
+
+function editorVistoria(rec) {
+  const v = JSON.parse(JSON.stringify(rec));
+  v.id = v.id || gid();
+  const travada = !!(v.assinatura || v.assinaturaToken);
+  modal(`<h3>${esc(v.tipo)} — ${esc(nomeDe('obras', v.obraId))}</h3>
+    <div class="f2"><div class="fld"><label>Tipo</label><select id="v_tipo" ${travada ? 'disabled' : ''}>${TIPOS_VIST.map(t => `<option ${t === v.tipo ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+    <div class="fld"><label>Data da vistoria</label><input type="date" id="v_data" value="${esc(v.data)}" ${travada ? 'disabled' : ''}></div>
+    <div class="fld"><label>Responsável pela vistoria</label><input id="v_resp" value="${esc(v.responsavel)}" placeholder="Ex.: Eng. Carlos" ${travada ? 'disabled' : ''}></div>
+    <div class="fld"><label>Prazo para corrigir pendências</label><input id="v_prazo" value="${esc(v.prazoPend)}" placeholder="Ex.: 15 dias" ${travada ? 'disabled' : ''}></div></div>
+    <div id="v_resumo" class="totbox" style="justify-content:flex-start"></div>
+    <div id="v_lista"></div>
+    ${travada ? '<p class="demo">Este documento já foi enviado ou assinado: a lista não pode mais ser alterada.</p>' : '<button type="button" class="btn sm" id="v_amb">+ Ambiente</button>'}
+    <div class="mact">${rec.id && !v.assinatura ? '<button type="button" class="btn danger" id="v_del">Excluir</button>' : ''}<span style="flex:1"></span><button type="button" class="btn" onclick="fecharModal()">Fechar</button>${travada ? '' : '<button type="button" class="btn pri" id="v_ok">Salvar</button>'}</div>`, 'wide');
+  const desenha = () => {
+    const g = []; const idx = {};
+    v.itens.forEach((i, k) => { if (!(i.ambiente in idx)) { idx[i.ambiente] = g.length; g.push([i.ambiente, []]); } g[idx[i.ambiente]][1].push([i, k]); });
+    $('#v_lista').innerHTML = g.map(([amb, its]) => `<div class="amb"><div class="ambh"><b>${esc(amb)}</b><span>${its.filter(([i]) => i.status).length}/${its.length}</span>${travada ? '' : `<button type="button" class="btn sm" data-addit="${esc(amb)}">+ Item</button>`}</div>
+      ${its.map(([i, k]) => `<div class="vit"><div class="vn">${travada ? esc(i.item) : `<input data-k="${k}" data-f="item" value="${esc(i.item)}">`}</div>
+        <div class="seg">${Object.entries(ST_ITEM).map(([s, [l]]) => `<button type="button" class="${i.status === s ? 'on ' + s : ''}" data-k="${k}" data-st="${s}" ${travada ? 'disabled' : ''}>${l}</button>`).join('')}</div>
+        <input class="vo" data-k="${k}" data-f="obs" value="${esc(i.obs)}" placeholder="${i.status === 'pend' ? 'Descreva a pendência' : 'Observação'}" ${travada ? 'disabled' : ''}>
+        <div class="vf">${i.fotoThumb ? `<img src="${i.fotoThumb}" data-verfoto="${k}" alt="">` : ''}${travada ? '' : `<label class="btn sm" title="Foto">📷<input type="file" accept="image/*" capture="environment" data-foto="${k}" hidden></label>`}${travada ? '' : `<button type="button" class="btn sm danger" data-rm="${k}" title="Remover item">×</button>`}</div></div>`).join('')}</div>`).join('');
+    const c = contaVist(v);
+    $('#v_resumo').innerHTML = `<div><span>OK</span><b style="color:var(--ok)">${c.ok}</b></div><div><span>Pendentes</span><b style="color:var(--bad)">${c.pend}</b></div><div><span>N/A</span><b>${c.na}</b></div><div><span>Falta verificar</span><b>${c.nada}</b></div>`;
+  };
+  const L = $('#v_lista');
+  L.addEventListener('click', async e => {
+    const st = e.target.closest('[data-st]'), add = e.target.closest('[data-addit]'), rm = e.target.closest('[data-rm]'), vf = e.target.closest('[data-verfoto]');
+    if (st) { const i = v.itens[+st.dataset.k]; i.status = i.status === st.dataset.st ? '' : st.dataset.st; desenha(); if (i.status === 'pend') { const inp = L.querySelector(`.vo[data-k="${st.dataset.k}"]`); inp && inp.focus(); } }
+    if (add) { const a = add.dataset.addit; let pos = -1; v.itens.forEach((i, k) => { if (i.ambiente === a) pos = k; }); v.itens.splice(pos + 1, 0, {id:gid(), ambiente:a, item:'', status:'', obs:''}); desenha(); const inp = L.querySelector(`[data-k="${pos + 1}"][data-f="item"]`); inp && inp.focus(); }
+    if (rm) { v.itens.splice(+rm.dataset.rm, 1); desenha(); }
+    if (vf) { const i = v.itens[+vf.dataset.verfoto]; const x = await API.getDoc(S.eid, 'fotos', v.id + '_' + i.id); if (x && x.foto) { const w = window.open(); w.document.write(`<title>Foto</title><body style="margin:0;background:#000"><img src="${x.foto}" style="max-width:100%;display:block;margin:auto">`); } }
+  });
+  L.addEventListener('input', e => { const el = e.target; if (el.dataset.f) v.itens[+el.dataset.k][el.dataset.f] = el.value; });
+  L.addEventListener('change', async e => {
+    const el = e.target; if (!el.dataset.foto || !el.files[0]) return;
+    const i = v.itens[+el.dataset.foto]; toast('Enviando foto...');
+    const r = await comprimir(el.files[0]); const th = await new Promise(res => { const im = new Image(); im.onload = () => { const s = Math.min(1, 240 / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = im.width * s; c.height = im.height * s; c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', .55)); }; im.src = r.thumb; });
+    await API.put(S.eid, 'fotos', v.id + '_' + i.id, {foto:r.foto}); i.fotoThumb = th; desenha();
+  });
+  if (!travada) {
+    $('#v_amb').onclick = () => { const n = prompt('Nome do ambiente (ex.: Varanda, Garagem, Suíte):'); if (!n || !n.trim()) return; v.itens.push({id:gid(), ambiente:n.trim(), item:'', status:'', obs:''}); desenha(); };
+    $('#v_ok').onclick = async () => {
+      Object.assign(v, {tipo:$('#v_tipo').value, data:$('#v_data').value || hoje(), responsavel:$('#v_resp').value.trim(), prazoPend:$('#v_prazo').value.trim()});
+      v.itens = v.itens.filter(i => (i.item || '').trim());
+      await salvar('vistorias', v); fecharModal(); render(); toast('Vistoria salva');
+    };
+  }
+  if ($('#v_del')) $('#v_del').onclick = async () => { if (!confirm('Excluir esta vistoria?')) return; for (const i of v.itens) if (i.fotoThumb) API.del(S.eid, 'fotos', v.id + '_' + i.id).catch(() => {}); await excluir('vistorias', v.id); fecharModal(); render(); };
+  desenha();
+}
+function novaVistoria(obraId, tipo) {
+  const itens = []; Object.entries(CHECK_PADRAO).forEach(([a, its]) => its.forEach(t => itens.push({id:gid(), ambiente:a, item:t, status:'', obs:''})));
+  editorVistoria({obraId, tipo:tipo || 'Entrega da obra', data:hoje(), responsavel:S.perfil.nome || '', prazoPend:'15 dias', itens});
+}
+function prontaParaAssinar(v) {
+  const c = contaVist(v);
+  if (c.nada) { if (!confirm(`Ainda há ${c.nada} item(ns) sem verificar. Eles sairão como "—" no documento.\n\nContinuar mesmo assim?`)) return false; }
+  const o = achar('obras', v.obraId) || {};
+  if (!o.clienteId) { toast('Defina o cliente da obra (Editar obra) antes de assinar.'); return false; }
+  return avisoFaltando(textoVistoria(v));
+}
+function assinarVistoriaAqui(id) {
+  const v = achar('vistorias', id), o = achar('obras', v.obraId) || {}, c = achar('clientes', o.clienteId) || {};
+  if (!prontaParaAssinar(v)) return;
+  const texto = textoVistoria(v), cnt = contaVist(v);
+  modal(`<h3>Assinatura — ${esc(v.tipo)}</h3><div class="ctprev">${esc(texto)}</div>
+    <p style="margin:0 0 12px;color:var(--mut)">Checklist: <b style="color:var(--ok)">${cnt.ok} OK</b> · <b style="color:var(--bad)">${cnt.pend} pendente(s)</b> · ${cnt.na} N/A</p>
+    <div class="f2"><div class="fld"><label>Nome completo de quem assina</label><input id="s_nome" value="${esc(c.nome)}"></div><div class="fld"><label>CPF</label><input id="s_cpf" value="${esc(c.cpfCnpj)}" inputmode="numeric"></div></div>
+    ${HTML_PAD('s_pad')}<label class="chk" style="margin-top:10px"><input type="checkbox" id="s_ok"> Conferi a obra e concordo com este ${v.tipo === 'Entrega da obra' ? 'termo de entrega' : 'relatório'}.</label>
+    <div class="mact"><span style="flex:1"></span><button class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri" id="s_go">Confirmar assinatura</button></div>`, 'wide');
+  const pad = padAssinatura($('#s_pad')); $('#s_pad_limpar').onclick = pad.limpar;
+  $('#s_go').onclick = async () => {
+    const nome = $('#s_nome').value.trim(), cpf = $('#s_cpf').value.trim();
+    if (nome.length < 5) return toast('Digite o nome completo.'); if (!cpfOk(cpf)) return toast('Digite um CPF/CNPJ válido.');
+    if (pad.vazio()) return toast('Faça a assinatura no quadro.'); if (!$('#s_ok').checked) return toast('Marque a confirmação.');
+    $('#s_go').disabled = true;
+    const x = await salvar('vistorias', {...v, textoFinal:texto, assinaturaEmpresa:S.empresa.assinatura || '', assinatura:{img:pad.png(), nome, cpf, em:new Date().toISOString(), modo:'presencial', dispositivo:navigator.userAgent.slice(0, 160)}});
+    fecharModal(); await aposAssinarVistoria(x); render(); toast('Assinado!');
+  };
+}
+async function enviarVistoria(id) {
+  const v = achar('vistorias', id), o = achar('obras', v.obraId) || {}, c = achar('clientes', o.clienteId) || {};
+  let tk = v.assinaturaToken;
+  if (!tk) {
+    if (!prontaParaAssinar(v)) return;
+    tk = gid() + gid(); const texto = textoVistoria(v);
+    await API.setAssinatura(tk, {empresaId:S.eid, empresaNome:S.empresa.nome, empresaTel:S.empresa.telefone || '', logo:S.empresa.logo || '', assinaturaEmpresa:S.empresa.assinatura || '',
+      numero:(o.nome || '') + ' · ' + fdata(v.data), clienteNome:c.nome || '', texto, docNome:v.tipo === 'Entrega da obra' ? 'termo de entrega' : 'relatório de vistoria',
+      checklist:(v.itens || []).map(i => ({ambiente:i.ambiente, item:i.item, status:i.status || '', obs:i.obs || ''})), status:'pendente', criadoEm:Date.now()});
+    await salvar('vistorias', {...v, assinaturaToken:tk, textoFinal:texto, assinaturaEmpresa:S.empresa.assinatura || ''}); render();
+  }
+  const url = location.origin + location.pathname + '?assinar=' + tk;
+  modal(`<h3>Enviar para o cliente assinar</h3><p style="color:var(--mut);margin-top:0">O cliente abre o link no celular, confere a lista e assina com o dedo.</p>
+    <div class="fld"><input value="${esc(url)}" readonly onclick="this.select()"></div>${USE_FB ? '' : '<p class="demo">Modo demonstração: o link só abre neste navegador.</p>'}
+    <div class="mact"><span style="flex:1"></span><button class="btn" onclick="navigator.clipboard.writeText('${esc(url)}');toast('Link copiado')">Copiar</button>
+    ${c.telefone ? `<a class="btn pri" target="_blank" href="${wa(c.telefone, `Olá, ${(c.nome || '').split(' ')[0]}! Segue o ${v.tipo === 'Entrega da obra' ? 'termo de entrega' : 'relatório de vistoria'} da obra "${o.nome}" para você conferir e assinar pelo celular: ${url}`)}">Enviar no WhatsApp</a>` : ''}</div>`);
+}
+async function aposAssinarVistoria(v) {
+  if (v.tipo !== 'Entrega da obra') return;
+  const o = achar('obras', v.obraId); if (!o || o.status === 'Concluída') return;
+  await salvar('obras', {...o, status:'Concluída', entregueEm:(v.assinatura.em || '').slice(0, 10) || hoje()}); syncPortal(o.id);
+}
+function abaVistorias(o) {
+  const vs = S.data.vistorias.filter(v => v.obraId === o.id).sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+  if (vs.some(v => v.assinaturaToken && !v.assinatura)) setTimeout(checarAssinaturas, 50);
+  return `<div class="row" style="justify-content:space-between;margin-bottom:12px"><span style="color:var(--mut)">Checklist com fotos e termo assinado pelo cliente. Ao assinar a entrega, a obra é marcada como Concluída.</span>
+    <div class="row"><button class="btn" data-act="novaVist" data-a="${o.id}" data-b="Vistoria intermediária">+ Vistoria</button><button class="btn pri" data-act="novaVist" data-a="${o.id}" data-b="Entrega da obra">+ Entrega da obra</button></div></div>`
+  + (vs.length ? `<div class="grid3">${vs.map(v => { const c = contaVist(v), tot = (v.itens || []).length;
+      return `<div class="card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><div><b>${esc(v.tipo)}</b><div style="color:var(--mut);font-size:12.5px">${fdata(v.data)}${v.responsavel ? ' · ' + esc(v.responsavel) : ''}</div></div>${badgeVist(v)}</div>
+      <div style="margin:12px 0 6px">${barra(tot ? (tot - c.nada) / tot * 100 : 0, c.nada ? '' : 'g')}</div>
+      <div style="font-size:12.5px;color:var(--mut);margin-bottom:12px"><b style="color:var(--ok)">${c.ok} OK</b> · <b style="color:${c.pend ? 'var(--bad)' : 'inherit'}">${c.pend} pendente(s)</b> · ${c.na} N/A${c.nada ? ` · ${c.nada} a verificar` : ''}</div>
+      <div class="row"><button class="btn sm" data-act="editVist" data-a="${v.id}">${v.assinatura || v.assinaturaToken ? 'Ver lista' : 'Abrir checklist'}</button><button class="btn sm" data-act="docVist" data-a="${v.id}">Documento</button>${v.assinatura ? '' : `<button class="btn sm pri" data-act="menuVist" data-a="${v.id}">${v.assinaturaToken ? 'Link de assinatura' : 'Assinar'}</button>`}</div></div>`; }).join('')}</div>`
+    : '<div class="vazio">Nenhuma vistoria ainda. Use "+ Entrega da obra" para fazer o checklist final e o termo de entrega.</div>');
 }
 
 /* ===================== AÇÕES ===================== */
@@ -1336,6 +1530,16 @@ const ACT = {
   exemplo:async () => { if (!confirm('Carregar obras, clientes, funcionários e lançamentos de exemplo?')) return; toast('Carregando exemplo...'); await dadosExemplo(); S.page = 'dashboard'; render(); toast('Dados de exemplo carregados'); },
   admRenovar:async eid => { const e = await API.getEmpresa(eid); const base = Math.max(Date.now(), e.venceTs || 0); await API.setEmpresa(eid, {status:'ativo', venceTs:base + 30 * 864e5}); if (eid === S.eid) S.empresa = await API.getEmpresa(eid); render(); toast('Renovada por 30 dias'); },
   admStatus:async (eid, st) => { if (st === 'bloqueado' && !confirm('Bloquear o acesso desta construtora?')) return; const e = await API.getEmpresa(eid); const x = {status:st}; if (st === 'ativo' && (e.venceTs || 0) < Date.now()) x.venceTs = Date.now() + 3 * 864e5; await API.setEmpresa(eid, x); render(); toast(st === 'ativo' ? 'Liberada' : 'Bloqueada'); },
+  novaVist:(oid, tipo) => novaVistoria(oid, tipo),
+  editVist:id => editorVistoria(achar('vistorias', id)),
+  docVist:id => abrirDocVistoria(achar('vistorias', id)),
+  menuVist:id => { const v = achar('vistorias', id); if (v.assinaturaToken) return enviarVistoria(id);
+    modal(`<h3>Assinar — ${esc(v.tipo)}</h3><div class="opcs">
+      <button class="opc" data-act="assinarVist" data-a="${id}"><b>✍️ Assinar aqui agora</b><span>O cliente está na obra com você e assina com o dedo neste aparelho.</span></button>
+      <button class="opc" data-act="enviarVist" data-a="${id}"><b>📲 Enviar link para o cliente</b><span>Ele confere a lista e assina pelo celular. A assinatura chega aqui sozinha.</span></button></div>
+      <div class="mact"><span style="flex:1"></span><button class="btn" onclick="fecharModal()">Cancelar</button></div>`); },
+  assinarVist:id => assinarVistoriaAqui(id),
+  enviarVist:id => enviarVistoria(id),
   docCt:id => abrirDocContrato(achar('contratos', id)),
   menuCt:id => { const x = achar('contratos', id); if (x.assinaturaToken) return enviarParaAssinar(id);
     modal(`<h3>Assinar contrato ${esc(x.numero || '')}</h3><div class="opcs">
