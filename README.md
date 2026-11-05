@@ -28,6 +28,10 @@ Perfis de usuário: **Administrador** (tudo), **Engenheiro / Mestre de obras** (
 
 Itens por etapa com o seu custo, BDI/margem e desconto. "Salvar e gerar PDF" abre o orçamento em A4: clique em **Salvar PDF / Imprimir** e escolha **Salvar como PDF**. A logo vem de Configurações. **Aprovar** cria a obra, as etapas (com custo previsto) e o contrato.
 
+## Contratos com assinatura
+
+Em Clientes → Contratos, botão **Assinar**: enviar o link para o cliente assinar pelo celular, ou assinar na hora com o dedo. O modelo do contrato (com campos automáticos {{CLIENTE}}, {{VALOR}}...) e a assinatura da construtora ficam em Configurações. Cada assinatura registra nome, CPF, data/hora e aparelho.
+
 ## Testar agora
 
 Abra o `app/index.html` no navegador e clique em **Entrar com dados de exemplo**. Sem o Firebase configurado ele roda em modo demonstração (dados só naquele navegador).

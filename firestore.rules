@@ -46,6 +46,17 @@ service cloud.firestore {
       }
     }
 
+    // Assinatura de contrato pelo link: o cliente (sem login) só consegue assinar uma vez
+    match /assinaturas/{token} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if daEmpresa(request.resource.data.empresaId);
+      allow update: if daEmpresa(resource.data.empresaId)
+        || (resource.data.status == 'pendente' && request.resource.data.status == 'assinado'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'assinatura']));
+      allow delete: if daEmpresa(resource.data.empresaId);
+    }
+
     // Portal do cliente: página pública e resumida (sem valores)
     match /portais/{token} {
       allow get: if true;

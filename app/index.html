@@ -120,6 +120,13 @@ tbody tr:hover{background:var(--soft)}
 .modal{background:var(--card);border-radius:14px;width:100%;max-width:560px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .modal h3{margin:0 0 16px;font-size:17px}
 .modal.wide{max-width:960px}
+.padw{position:relative;border:2px dashed var(--line);border-radius:12px;background:#fff;margin-top:6px}
+.pad{display:block;width:100%;height:190px;touch-action:none;cursor:crosshair}
+.padl{position:absolute;left:14px;bottom:44px;right:14px;border-top:1px solid #cbd5e1;padding-top:4px;font-size:11.5px;color:#94a3b8;pointer-events:none}
+.padw .btn{position:absolute;right:8px;top:8px}
+.ctprev{max-height:230px;overflow-y:auto;white-space:pre-wrap;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:12.5px;margin-bottom:14px}
+.opcs{display:grid;gap:10px}.opc{text-align:left;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:14px 16px;cursor:pointer}.opc:hover{border-color:var(--pri);background:var(--priSoft)}.opc b{display:block;font-size:14.5px;margin-bottom:2px}.opc span{color:var(--mut);font-size:13px}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}.tags code{background:var(--priSoft);color:var(--pri2);padding:2px 7px;border-radius:6px;font-size:11.5px;cursor:pointer}
 table.itens td{padding:5px 6px}table.itens input,table.itens select{padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);width:100%}
 table.itens tbody tr{cursor:default}table.itens tbody tr:hover{background:none}
 .totbox{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:flex-end;align-items:baseline;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
@@ -306,6 +313,9 @@ const API = {
     if (USE_FB) return fs.doc(`empresas/${eid}/${col}/${id}`).delete();
     const d = Demo.get(); if (d.dados[eid] && d.dados[eid][col]) delete d.dados[eid][col][id]; Demo.set(d);
   },
+  async getAssinatura(t) { if (USE_FB) { const s = await fs.doc('assinaturas/' + t).get(); return s.exists ? s.data() : null; } return (Demo.get().assinaturas || {})[t] || null; },
+  async setAssinatura(t, p) { if (USE_FB) return fs.doc('assinaturas/' + t).set(p); const d = Demo.get(); d.assinaturas = d.assinaturas || {}; d.assinaturas[t] = p; Demo.set(d); },
+  async updAssinatura(t, p) { if (USE_FB) return fs.doc('assinaturas/' + t).update(p); const d = Demo.get(); d.assinaturas = d.assinaturas || {}; d.assinaturas[t] = {...(d.assinaturas[t] || {}), ...p}; Demo.set(d); },
   async getPortal(t) { if (USE_FB) { const s = await fs.doc('portais/' + t).get(); return s.exists ? s.data() : null; } return Demo.get().portais[t] || null; },
   async setPortal(t, p) { if (USE_FB) return fs.doc('portais/' + t).set(p); const d = Demo.get(); d.portais[t] = p; Demo.set(d); }
 };
@@ -435,7 +445,7 @@ const SCHEMA = {
     {k:'clienteId', l:'Cliente', ...ref('clientes'), req:1}, {k:'obraId', l:'Obra', ...ref('obras')},
     {k:'numero', l:'Nº do contrato', half:1}, {k:'assinadoEm', l:'Assinado em', type:'date', half:1},
     {k:'valor', l:'Valor total (R$)', type:'money', req:1, half:1}, {k:'parcelas', l:'Nº de parcelas', type:'number', half:1},
-    {k:'primeiroVenc', l:'1º vencimento', type:'date', half:1}, {k:'obs', l:'Observações / escopo', type:'textarea'}]}
+    {k:'primeiroVenc', l:'1º vencimento', type:'date', half:1}, {k:'prazo', l:'Prazo de execução', half:1, ph:'Ex.: 150 dias'}, {k:'obs', l:'Escopo do serviço (entra no contrato)', type:'textarea'}]}
 };
 
 function campo(f, v) {
@@ -767,7 +777,9 @@ function pgCli() {
     + tabela('contratos', S.data.contratos.slice().sort((a, b) => (b.assinadoEm || '').localeCompare(a.assinadoEm || '')), [{h:'Nº', k:'numero'}, {h:'Cliente', f:x => esc(nomeDe('clientes', x.clienteId))}, {h:'Obra', f:x => esc(nomeDe('obras', x.obraId))},
       {h:'Assinado', f:x => fdata(x.assinadoEm)}, {h:'Valor', r:1, f:x => `<b>${brl(x.valor)}</b><br><small style="color:var(--mut)">${x.parcelas || 1}x de ${brl((+x.valor || 0) / (+x.parcelas || 1))}</small>`},
       {h:'Recebido', r:1, f:x => { const r = S.data.lancamentos.filter(l => l.contratoId === x.id && l.pago).reduce((s, l) => s + +l.valor, 0); return brl(r); }},
-      {h:'', r:1, f:x => x.parcelasGeradas ? '<span class="badge b-ok">parcelas no financeiro</span>' : (pode('financeiro') ? `<button class="btn sm" data-act="gerarParcelas" data-a="${x.id}">Gerar parcelas</button>` : '')}], 'Nenhum contrato.');
+      {h:'Assinatura', f:x => badgeCt(x)},
+      {h:'', r:1, f:x => `<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-act="docCt" data-a="${x.id}">Ver</button>${x.assinatura ? '' : `<button class="btn sm pri" data-act="menuCt" data-a="${x.id}">${x.assinaturaToken ? 'Link de assinatura' : 'Assinar'}</button>`}${x.parcelasGeradas ? '' : (pode('financeiro') ? `<button class="btn sm" data-act="gerarParcelas" data-a="${x.id}">Parcelas</button>` : '')}</div>`}], 'Nenhum contrato. Contratos também são criados ao aprovar um orçamento.');
+  if (at !== 'cli' && S.data.contratos.some(x => x.assinaturaToken && !x.assinatura)) setTimeout(checarAssinaturas, 50);
   return topo('Clientes', 'Cadastro de clientes e contratos') + tabs('cli', [['cli','Clientes'], ['con','Contratos']]) + c;
 }
 
@@ -787,6 +799,8 @@ function pgCfg() {
       <div class="it"><span>Plano</span><b>${brl(PRECO_MENSAL)}/mês · obras e usuários ilimitados</b></div></div>
       <a class="btn pri" style="margin-top:14px" target="_blank" href="${wa(WHATS_SUPORTE, `Olá! Quero ${e.status === 'teste' ? 'assinar' : 'renovar'} o Gestor de Obras da ${e.nome}.`)}">${e.status === 'teste' ? 'Assinar agora' : 'Renovar assinatura'}</a>
       <a class="btn" style="margin-top:14px" target="_blank" href="${wa(WHATS_SUPORTE, 'Olá! Preciso de ajuda com o Gestor de Obras.')}">Suporte</a></div></div>
+  ${adm ? `<div class="card" style="margin-top:16px"><h3>Contratos</h3><p style="color:var(--mut);margin-top:0">Modelo usado nos contratos e assinatura da construtora (entra como CONTRATADA).</p>
+    <div class="row"><button class="btn" data-act="modeloCt">Editar modelo de contrato</button><button class="btn" data-act="assEmp">${e.assinatura ? 'Refazer assinatura da construtora' : 'Cadastrar assinatura da construtora'}</button>${e.assinatura ? `<img src="${e.assinatura}" style="height:40px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:2px 8px">` : ''}</div></div>` : ''}
   ${adm ? `<div class="card" style="margin-top:16px"><h3>Seus dados</h3><p style="color:var(--mut);margin-top:0">Baixe uma cópia de todas as informações da construtora (backup).</p><div class="row"><button class="btn" data-act="backup">Baixar backup (JSON)</button>${!S.data.obras.length ? '<button class="btn" data-act="exemplo">Carregar dados de exemplo</button>' : ''}</div></div>` : ''}`;
 }
 
@@ -1002,6 +1016,236 @@ function novoOrc(dup) {
   editorOrc(base);
 }
 
+/* ===================== CONTRATOS COM ASSINATURA ===================== */
+const CONTRATO_PADRAO = `CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE CONSTRUÇÃO CIVIL
+
+CONTRATADA: {{EMPRESA}}, inscrita no CNPJ sob o nº {{CNPJ_EMPRESA}}, com sede em {{CIDADE}}, telefone {{TELEFONE_EMPRESA}}.
+
+CONTRATANTE: {{CLIENTE}}, inscrito(a) no CPF/CNPJ sob o nº {{CPF_CLIENTE}}, residente em {{ENDERECO_CLIENTE}}, telefone {{TELEFONE_CLIENTE}}.
+
+As partes acima identificadas têm entre si justo e contratado o seguinte:
+
+CLÁUSULA 1ª – DO OBJETO
+A CONTRATADA se obriga a executar, para a CONTRATANTE, a obra/serviço "{{OBRA}}", no endereço {{ENDERECO_OBRA}}, conforme o escopo abaixo:
+{{ESCOPO}}
+
+CLÁUSULA 2ª – DO PREÇO E DA FORMA DE PAGAMENTO
+Pelo serviço contratado, a CONTRATANTE pagará à CONTRATADA o valor total de {{VALOR}}, em {{PARCELAS}} parcela(s), com o primeiro vencimento em {{PRIMEIRO_VENCIMENTO}}. O atraso no pagamento sujeitará a CONTRATANTE a multa de 2% (dois por cento) e juros de 1% (um por cento) ao mês sobre o valor em atraso.
+
+CLÁUSULA 3ª – DO PRAZO
+A obra será executada no prazo de {{PRAZO}}, contado a partir do início dos serviços. O prazo poderá ser prorrogado em caso de chuvas que impeçam o trabalho, atraso nos pagamentos, falta de liberações de responsabilidade da CONTRATANTE, alterações de projeto ou caso fortuito e força maior.
+
+CLÁUSULA 4ª – DAS OBRIGAÇÕES DA CONTRATADA
+a) executar os serviços com qualidade, seguindo as normas técnicas aplicáveis;
+b) fornecer a mão de obra necessária e responsabilizar-se pelos encargos de seus funcionários;
+c) manter o local da obra organizado e informar a CONTRATANTE sobre o andamento dos serviços.
+
+CLÁUSULA 5ª – DAS OBRIGAÇÕES DA CONTRATANTE
+a) efetuar os pagamentos nas datas combinadas;
+b) garantir o acesso ao local da obra e fornecer água e energia elétrica para a execução;
+c) providenciar documentos, projetos e autorizações que sejam de sua responsabilidade.
+
+CLÁUSULA 6ª – DAS ALTERAÇÕES
+Qualquer alteração ou serviço não previsto neste contrato será orçado à parte e só será executado após aprovação por escrito da CONTRATANTE, por meio de aditivo.
+
+CLÁUSULA 7ª – DA GARANTIA
+A CONTRATADA responde pela solidez e segurança da obra nos termos do art. 618 do Código Civil.
+
+CLÁUSULA 8ª – DA RESCISÃO
+O contrato poderá ser rescindido por qualquer das partes em caso de descumprimento das cláusulas, mediante aviso por escrito, ficando a CONTRATANTE obrigada a pagar pelos serviços já executados.
+
+CLÁUSULA 9ª – DO FORO
+Fica eleito o foro da comarca de {{CIDADE}} para resolver quaisquer questões oriundas deste contrato.
+
+As partes declaram que leram e concordam com todas as cláusulas, assinando este contrato eletronicamente.
+
+{{CIDADE}}, {{DATA}}.`;
+const CAMPOS_CONTRATO = ['EMPRESA','CNPJ_EMPRESA','TELEFONE_EMPRESA','CIDADE','CLIENTE','CPF_CLIENTE','ENDERECO_CLIENTE','TELEFONE_CLIENTE','OBRA','ENDERECO_OBRA','ESCOPO','VALOR','PARCELAS','PRIMEIRO_VENCIMENTO','PRAZO','DATA'];
+const statusCt = x => x.assinatura ? 'Assinado' : x.assinaturaToken ? 'Aguardando assinatura' : 'Não assinado';
+const badgeCt = x => { const s = statusCt(x); return `<span class="badge ${s === 'Assinado' ? 'b-ok' : s === 'Não assinado' ? 'b-mut' : 'b-warn'}">${s}</span>`; };
+function dataExtenso(s) { const m = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']; const [a, mm, d] = (s || hoje()).split('-'); return `${+d} de ${m[+mm - 1]} de ${a}`; }
+function preencherContrato(ct) {
+  const E = S.empresa, c = achar('clientes', ct.clienteId) || {}, o = achar('obras', ct.obraId) || {};
+  const v = {EMPRESA:E.nome, CNPJ_EMPRESA:E.cnpj, TELEFONE_EMPRESA:E.telefone, CIDADE:E.cidade, CLIENTE:c.nome, CPF_CLIENTE:c.cpfCnpj, ENDERECO_CLIENTE:c.endereco, TELEFONE_CLIENTE:c.telefone,
+    OBRA:o.nome || ct.obs || '', ENDERECO_OBRA:o.endereco, ESCOPO:ct.obs || o.nome || '', VALOR:brl(ct.valor), PARCELAS:String(+ct.parcelas || 1), PRIMEIRO_VENCIMENTO:fdata(ct.primeiroVenc),
+    PRAZO:ct.prazo || (o.inicio && o.previsao ? Math.max(0, diasAte(o.previsao) - diasAte(o.inicio)) + ' dias' : 'combinado entre as partes'), DATA:dataExtenso(ct.assinadoEm || hoje())};
+  const base = ct.texto || E.modeloContrato || CONTRATO_PADRAO;
+  return base.replace(/\{\{([A-Z_]+)\}\}/g, (m, k) => k in v ? (v[k] || '__________') : m);
+}
+/* Documento do contrato (usado pela construtora e pela página pública de assinatura) */
+function htmlContratoCorpo(d) {
+  const linhas = esc(d.texto).split('\n').map(l => { const t = l.trim();
+    if (/^CONTRATO DE/.test(t)) return `<p class="tit">${l}</p>`;
+    if (/^CLÁUSULA/.test(t)) return `<p class="cl">${l}</p>`;
+    if (/^(CONTRATADA|CONTRATANTE):/.test(t)) return `<p>${l.replace(/^(\s*)(CONTRATADA:|CONTRATANTE:)/, '$1<b>$2</b>')}</p>`;
+    return `<p>${l || '&nbsp;'}</p>`; }).join('');
+  const assin = (img, nome, info) => `<div class="as">${img ? `<img src="${img}" alt="">` : '<div class="vz"></div>'}<div class="ln">${esc(nome || '')}</div>${info ? `<small>${info}</small>` : ''}</div>`;
+  const a = d.assinatura;
+  return `<div class="pg">${d.logo ? `<img class="lg" src="${d.logo}" alt="">` : ''}<div class="txt">${linhas}</div>
+  <div class="ass">${assin(d.assinaturaEmpresa, d.empresaNome, 'CONTRATADA')}${assin(a && a.img, a ? a.nome : d.clienteNome, a ? `CONTRATANTE · CPF ${esc(a.cpf)}<br>Assinado eletronicamente em ${new Date(a.em).toLocaleString('pt-BR')}` : 'CONTRATANTE')}</div>
+  ${a ? `<div class="reg">Registro da assinatura eletrônica: ${esc(a.nome)} (CPF ${esc(a.cpf)}) aceitou e assinou este contrato em ${new Date(a.em).toLocaleString('pt-BR')} ${a.modo === 'link' ? 'pelo link enviado pela contratada' : 'presencialmente, no dispositivo da contratada'}. Contrato nº ${esc(d.numero || '')}.</div>` : ''}</div>`;
+}
+const CSS_CONTRATO = `@page{size:A4;margin:16mm 16mm 18mm}
+.pg{max-width:210mm;margin:18px auto;background:#fff;padding:16mm;box-shadow:0 4px 30px rgba(0,0,0,.12);font:10.5pt/1.55 Inter,Arial,sans-serif;color:#16191f}
+.lg{max-height:56px;max-width:160px;margin:0 auto 10px;display:block}
+.txt p{margin:0 0 2px;text-align:justify}.txt p.tit{text-align:center;font-weight:800;font-size:13pt;margin-bottom:14px}.txt p.cl{font-weight:700;margin-top:10px}
+.ass{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:40px;page-break-inside:avoid;break-inside:avoid;text-align:center}
+.as img{height:70px;max-width:100%;object-fit:contain;display:block;margin:0 auto -4px}.as .vz{height:70px}
+.as .ln{border-top:1px solid #6b7280;padding-top:6px;font-weight:600;font-size:10pt}.as small{color:#6b7280;font-size:8pt;line-height:1.4;display:block}
+.reg{margin-top:24px;padding:10px 12px;background:#f6f7f9;border-radius:8px;font-size:8pt;color:#4b5563;page-break-inside:avoid}
+@media print{body{background:#fff!important}.noprint{display:none!important}.pg{margin:0;padding:0;box-shadow:none;max-width:none}}
+@media (max-width:640px){.pg{padding:18px;margin:0}.ass{gap:16px}.txt p{text-align:left}}`;
+function dadosDocCt(ct) {
+  const c = achar('clientes', ct.clienteId) || {};
+  return {texto:ct.textoFinal || preencherContrato(ct), empresaNome:S.empresa.nome, logo:S.empresa.logo || '', assinaturaEmpresa:ct.assinaturaEmpresa || S.empresa.assinatura || '', clienteNome:c.nome, numero:ct.numero, assinatura:ct.assinatura || null};
+}
+function abrirDocContrato(ct) {
+  const w = window.open('', '_blank'); if (!w) return toast('Libere as janelas pop-up do navegador.');
+  const c = achar('clientes', ct.clienteId) || {};
+  w.document.open(); w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Contrato ${esc(ct.numero || '')} - ${esc(c.nome || '')}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"><style>body{margin:0;background:#e9ebef;-webkit-print-color-adjust:exact;print-color-adjust:exact}${CSS_CONTRATO}
+  .bar{position:sticky;top:0;background:#14181f;color:#fff;padding:10px 16px;display:flex;gap:8px;align-items:center;font:600 14px Inter,sans-serif}.bar b{flex:1}.bar button{border:0;border-radius:8px;padding:9px 14px;font:600 13px Inter,sans-serif;cursor:pointer;background:#fff}.bar .p{background:#f08a24;color:#fff}</style></head>
+  <body><div class="bar noprint"><b>Contrato ${esc(ct.numero || '')} · ${statusCt(ct)}</b><button class="p" onclick="print()">Salvar PDF / Imprimir</button><button onclick="close()">Fechar</button></div>${htmlContratoCorpo(dadosDocCt(ct))}</body></html>`);
+  w.document.close();
+}
+
+/* Quadro de assinatura com o dedo ou o mouse */
+function padAssinatura(cv) {
+  const r = window.devicePixelRatio || 1, ctx = cv.getContext('2d'); let des = false, usado = false, ult = null;
+  const ajusta = () => { const b = cv.getBoundingClientRect(); cv.width = b.width * r; cv.height = b.height * r; ctx.scale(r, r); ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#111827'; };
+  ajusta();
+  const pt = e => { const b = cv.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
+  cv.addEventListener('pointerdown', e => { e.preventDefault(); des = true; usado = true; ult = pt(e); cv.setPointerCapture(e.pointerId); ctx.beginPath(); ctx.arc(ult[0], ult[1], 1.1, 0, 7); ctx.fillStyle = '#111827'; ctx.fill(); });
+  cv.addEventListener('pointermove', e => { if (!des) return; e.preventDefault(); const p = pt(e); ctx.beginPath(); ctx.moveTo(ult[0], ult[1]); ctx.lineTo(p[0], p[1]); ctx.stroke(); ult = p; });
+  ['pointerup','pointercancel','pointerleave'].forEach(t => cv.addEventListener(t, () => { des = false; }));
+  return {limpar:() => { ctx.clearRect(0, 0, cv.width, cv.height); usado = false; }, vazio:() => !usado, png:() => cv.toDataURL('image/png')};
+}
+const HTML_PAD = (id) => `<div class="padw"><canvas id="${id}" class="pad"></canvas><div class="padl">Assine aqui com o dedo ou o mouse</div><button type="button" class="btn sm" id="${id}_limpar">Limpar</button></div>`;
+function avisoFaltando(texto) {
+  if (!texto.includes('__________')) return true;
+  return confirm('Alguns dados estão em branco no contrato (aparecem como "__________"). Ex.: cidade da construtora, CPF ou endereço do cliente.\n\nPreencha em Configurações / cadastro do cliente para o contrato sair completo.\n\nContinuar mesmo assim?');
+}
+const cpfOk = s => soDig(s).length === 11 || soDig(s).length === 14;
+
+function assinarAgora(id) {
+  const ct = achar('contratos', id), c = achar('clientes', ct.clienteId) || {};
+  if (ct.assinatura) return toast('Este contrato já está assinado.');
+  const texto = ct.textoFinal || preencherContrato(ct);
+  if (!avisoFaltando(texto)) return;
+  modal(`<h3>Assinatura do contrato ${esc(ct.numero || '')}</h3>
+    <div class="ctprev">${esc(texto)}</div>
+    <div class="f2"><div class="fld"><label>Nome completo de quem assina</label><input id="s_nome" value="${esc(c.nome)}"></div><div class="fld"><label>CPF</label><input id="s_cpf" value="${esc(c.cpfCnpj)}" inputmode="numeric"></div></div>
+    ${HTML_PAD('s_pad')}
+    <label class="chk" style="margin-top:10px"><input type="checkbox" id="s_ok"> Li e concordo com todas as cláusulas deste contrato.</label>
+    <div class="mact"><span style="flex:1"></span><button class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri" id="s_go">Confirmar assinatura</button></div>`, 'wide');
+  const pad = padAssinatura($('#s_pad')); $('#s_pad_limpar').onclick = pad.limpar;
+  $('#s_go').onclick = async () => {
+    const nome = $('#s_nome').value.trim(), cpf = $('#s_cpf').value.trim();
+    if (nome.length < 5) return toast('Digite o nome completo.');
+    if (!cpfOk(cpf)) return toast('Digite um CPF/CNPJ válido.');
+    if (pad.vazio()) return toast('Faça a assinatura no quadro.');
+    if (!$('#s_ok').checked) return toast('Marque que leu e concorda.');
+    $('#s_go').disabled = true;
+    await salvar('contratos', {...ct, textoFinal:texto, assinaturaEmpresa:S.empresa.assinatura || '', assinadoEm:ct.assinadoEm || hoje(),
+      assinatura:{img:pad.png(), nome, cpf, em:new Date().toISOString(), modo:'presencial', dispositivo:navigator.userAgent.slice(0, 160)}});
+    fecharModal(); render(); toast('Contrato assinado!');
+  };
+}
+async function enviarParaAssinar(id) {
+  const ct = achar('contratos', id), c = achar('clientes', ct.clienteId) || {};
+  if (ct.assinatura) return toast('Este contrato já está assinado.');
+  let tk = ct.assinaturaToken;
+  if (!tk) {
+    tk = gid() + gid();
+    const texto = preencherContrato(ct);
+    if (!avisoFaltando(texto)) return;
+    await API.setAssinatura(tk, {empresaId:S.eid, empresaNome:S.empresa.nome, empresaTel:S.empresa.telefone || '', logo:S.empresa.logo || '', assinaturaEmpresa:S.empresa.assinatura || '',
+      numero:ct.numero || '', clienteNome:c.nome || '', texto, status:'pendente', criadoEm:Date.now()});
+    await salvar('contratos', {...ct, assinaturaToken:tk, textoFinal:texto, assinaturaEmpresa:S.empresa.assinatura || ''});
+    render();
+  }
+  const url = location.origin + location.pathname + '?assinar=' + tk;
+  modal(`<h3>Enviar contrato para assinatura</h3><p style="color:var(--mut);margin-top:0">O cliente abre o link no celular, lê o contrato, digita nome e CPF e assina com o dedo. A assinatura aparece aqui automaticamente.</p>
+    <div class="fld"><input value="${esc(url)}" readonly onclick="this.select()"></div>
+    ${USE_FB ? '' : '<p class="demo">Modo demonstração: o link só abre neste navegador.</p>'}
+    <div class="mact"><button class="btn danger" id="a_canc">Cancelar envio</button><span style="flex:1"></span><button class="btn" onclick="navigator.clipboard.writeText('${esc(url)}');toast('Link copiado')">Copiar</button>
+    ${c.telefone ? `<a class="btn pri" target="_blank" href="${wa(c.telefone, `Olá, ${(c.nome || '').split(' ')[0]}! Segue o contrato da ${S.empresa.nome} para você ler e assinar pelo celular: ${url}`)}">Enviar no WhatsApp</a>` : ''}</div>`);
+  $('#a_canc').onclick = async () => {
+    if (!confirm('Cancelar este link? O cliente não conseguirá mais assinar por ele.')) return;
+    await API.updAssinatura(tk, {status:'cancelado'}).catch(() => {});
+    const x = {...achar('contratos', id)}; delete x.assinaturaToken; delete x.textoFinal; await salvar('contratos', x); fecharModal(); render(); toast('Envio cancelado');
+  };
+}
+let _chkAss = 0;
+async function checarAssinaturas() {
+  if (Date.now() - _chkAss < 5000) return; _chkAss = Date.now();
+  let mudou = false;
+  for (const ct of S.data.contratos.filter(x => x.assinaturaToken && !x.assinatura)) {
+    try { const d = await API.getAssinatura(ct.assinaturaToken); if (d && d.status === 'assinado' && d.assinatura) { await salvar('contratos', {...achar('contratos', ct.id), assinatura:d.assinatura, assinadoEm:(d.assinatura.em || '').slice(0, 10) || hoje()}); mudou = true; } } catch (e) { console.warn(e); }
+  }
+  if (mudou) { toast('Contrato assinado pelo cliente!'); if (!$('#ov')) render(); }
+}
+function modeloContrato() {
+  const atual = S.empresa.modeloContrato || CONTRATO_PADRAO;
+  modal(`<h3>Modelo de contrato</h3><p style="color:var(--mut);margin-top:0">Este texto é usado em todos os contratos novos. Os campos entre {{ }} são preenchidos sozinhos com os dados do cliente, da obra e do contrato.</p>
+    <div class="tags">${CAMPOS_CONTRATO.map(k => `<code data-ins="{{${k}}}">{{${k}}}</code>`).join('')}</div>
+    <div class="fld"><textarea id="m_txt" style="min-height:360px;font-size:13px">${esc(atual)}</textarea></div>
+    <p class="demo" style="background:var(--warnSoft);color:var(--warn)">Este é um modelo base. Recomendamos que um advogado revise o texto para a realidade da sua construtora.</p>
+    <div class="mact"><button class="btn" id="m_pad">Restaurar padrão</button><span style="flex:1"></span><button class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri" id="m_ok">Salvar modelo</button></div>`, 'wide');
+  document.querySelectorAll('[data-ins]').forEach(t => t.onclick = () => { const ta = $('#m_txt'), p = ta.selectionStart; ta.setRangeText(t.dataset.ins, p, ta.selectionEnd, 'end'); ta.focus(); });
+  $('#m_pad').onclick = () => { $('#m_txt').value = CONTRATO_PADRAO; };
+  $('#m_ok').onclick = async () => { const v = $('#m_txt').value.trim(); const x = v === CONTRATO_PADRAO.trim() ? '' : v; await API.setEmpresa(S.eid, {modeloContrato:x}); S.empresa.modeloContrato = x; fecharModal(); toast('Modelo salvo'); };
+}
+function editarTextoContrato(id) {
+  const ct = achar('contratos', id);
+  if (ct.assinatura || ct.assinaturaToken) return toast('Contrato já enviado ou assinado: o texto não pode mais ser alterado.');
+  modal(`<h3>Texto do contrato ${esc(ct.numero || '')}</h3><p style="color:var(--mut);margin-top:0">Ajuste só este contrato (o modelo geral fica em Configurações).</p>
+    <div class="fld"><textarea id="t_txt" style="min-height:400px;font-size:13px">${esc(ct.texto ? preencherContrato(ct) : preencherContrato(ct))}</textarea></div>
+    <div class="mact"><button class="btn" id="t_reset">Voltar ao modelo</button><span style="flex:1"></span><button class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri" id="t_ok">Salvar</button></div>`, 'wide');
+  $('#t_reset').onclick = async () => { const x = {...ct}; delete x.texto; await salvar('contratos', x); fecharModal(); render(); toast('Usando o modelo padrão'); };
+  $('#t_ok').onclick = async () => { await salvar('contratos', {...ct, texto:$('#t_txt').value}); fecharModal(); render(); toast('Texto salvo'); };
+}
+function assinaturaEmpresa() {
+  modal(`<h3>Assinatura da construtora</h3><p style="color:var(--mut);margin-top:0">Assine uma vez. Ela entra automaticamente em todos os contratos como CONTRATADA.</p>${HTML_PAD('e_pad')}
+    <div class="mact"><span style="flex:1"></span><button class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri" id="e_ok">Salvar assinatura</button></div>`);
+  const pad = padAssinatura($('#e_pad')); $('#e_pad_limpar').onclick = pad.limpar;
+  $('#e_ok').onclick = async () => { if (pad.vazio()) return toast('Faça a assinatura no quadro.'); const img = pad.png(); await API.setEmpresa(S.eid, {assinatura:img}); S.empresa.assinatura = img; fecharModal(); render(); toast('Assinatura salva'); };
+}
+
+/* Página pública: o cliente assina pelo link */
+async function renderAssinar(tk) {
+  document.title = 'Assinatura de contrato';
+  const st = document.createElement('style'); st.textContent = CSS_CONTRATO + `.sgn{max-width:210mm;margin:0 auto 40px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}.sgn h3{margin:0 0 12px}.top2{background:var(--side);color:#fff;padding:14px 18px;font-weight:700;display:flex;gap:10px;align-items:center}`; document.head.appendChild(st);
+  $('#root').innerHTML = '<div class="boot"><div><div class="spin"></div><span>Carregando contrato...</span></div></div>';
+  let d = null; try { d = await API.getAssinatura(tk); } catch (e) { console.error(e); }
+  if (!d || d.status === 'cancelado') { $('#root').innerHTML = '<div class="portal"><div class="vazio">Este link de assinatura não está mais disponível. Fale com a construtora.</div></div>'; return; }
+  const desenha = () => {
+    const assinado = d.status === 'assinado';
+    $('#root').innerHTML = `<div class="top2 noprint"><div class="logo" style="width:30px;height:30px">${ico('logo')}</div><span style="flex:1">${esc(d.empresaNome)} · Contrato ${esc(d.numero)}</span>${assinado ? '<button class="btn sm" onclick="print()">Salvar PDF</button>' : ''}</div>
+      ${assinado ? '<div class="banner info noprint" style="max-width:210mm;margin:16px auto 0;background:var(--okSoft);color:var(--ok)"><b>Contrato assinado com sucesso.</b> Você pode salvar uma cópia em PDF no botão acima.</div>' : ''}
+      ${htmlContratoCorpo(d)}
+      ${assinado ? '' : `<div class="sgn noprint"><h3>Assinar contrato</h3>
+        <div class="f2"><div class="fld"><label>Seu nome completo</label><input id="p_nome" value="${esc(d.clienteNome)}"></div><div class="fld"><label>Seu CPF</label><input id="p_cpf" inputmode="numeric" placeholder="000.000.000-00"></div></div>
+        ${HTML_PAD('p_pad')}
+        <label class="chk" style="margin:12px 0"><input type="checkbox" id="p_ok"> Li e concordo com todas as cláusulas deste contrato.</label>
+        <button class="btn pri" id="p_go" style="width:100%;justify-content:center;padding:13px">Assinar contrato</button></div>`}`;
+    if (assinado) return;
+    const pad = padAssinatura($('#p_pad')); $('#p_pad_limpar').onclick = pad.limpar;
+    $('#p_go').onclick = async () => {
+      const nome = $('#p_nome').value.trim(), cpf = $('#p_cpf').value.trim();
+      if (nome.length < 5) return toast('Digite seu nome completo.');
+      if (!cpfOk(cpf)) return toast('Digite um CPF válido.');
+      if (pad.vazio()) return toast('Faça sua assinatura no quadro.');
+      if (!$('#p_ok').checked) return toast('Marque que leu e concorda.');
+      $('#p_go').disabled = true; $('#p_go').textContent = 'Enviando...';
+      const assinatura = {img:pad.png(), nome, cpf, em:new Date().toISOString(), modo:'link', dispositivo:navigator.userAgent.slice(0, 160)};
+      try { await API.updAssinatura(tk, {status:'assinado', assinatura}); d.status = 'assinado'; d.assinatura = assinatura; window.scrollTo(0, 0); desenha(); }
+      catch (e) { console.error(e); toast('Não foi possível enviar. Verifique a internet e tente de novo.'); $('#p_go').disabled = false; $('#p_go').textContent = 'Assinar contrato'; }
+    };
+  };
+  desenha();
+}
+
 /* ===================== AÇÕES ===================== */
 const ACT = {
   nav:a => { S.page = a; S.obraId = null; window.scrollTo(0, 0); render(); },
@@ -1092,6 +1336,18 @@ const ACT = {
   exemplo:async () => { if (!confirm('Carregar obras, clientes, funcionários e lançamentos de exemplo?')) return; toast('Carregando exemplo...'); await dadosExemplo(); S.page = 'dashboard'; render(); toast('Dados de exemplo carregados'); },
   admRenovar:async eid => { const e = await API.getEmpresa(eid); const base = Math.max(Date.now(), e.venceTs || 0); await API.setEmpresa(eid, {status:'ativo', venceTs:base + 30 * 864e5}); if (eid === S.eid) S.empresa = await API.getEmpresa(eid); render(); toast('Renovada por 30 dias'); },
   admStatus:async (eid, st) => { if (st === 'bloqueado' && !confirm('Bloquear o acesso desta construtora?')) return; const e = await API.getEmpresa(eid); const x = {status:st}; if (st === 'ativo' && (e.venceTs || 0) < Date.now()) x.venceTs = Date.now() + 3 * 864e5; await API.setEmpresa(eid, x); render(); toast(st === 'ativo' ? 'Liberada' : 'Bloqueada'); },
+  docCt:id => abrirDocContrato(achar('contratos', id)),
+  menuCt:id => { const x = achar('contratos', id); if (x.assinaturaToken) return enviarParaAssinar(id);
+    modal(`<h3>Assinar contrato ${esc(x.numero || '')}</h3><div class="opcs">
+      <button class="opc" data-act="enviarCt" data-a="${id}"><b>📲 Enviar link para o cliente</b><span>O cliente recebe no WhatsApp, lê e assina pelo celular. A assinatura chega aqui sozinha.</span></button>
+      <button class="opc" data-act="assinarCt" data-a="${id}"><b>✍️ Assinar aqui agora</b><span>O cliente está com você: ele assina com o dedo neste aparelho.</span></button>
+      <button class="opc" data-act="txtCt" data-a="${id}"><b>📝 Ajustar o texto antes</b><span>Muda alguma cláusula só deste contrato.</span></button></div>
+      <div class="mact"><span style="flex:1"></span><button class="btn" onclick="fecharModal()">Cancelar</button></div>`); },
+  assinarCt:id => assinarAgora(id),
+  enviarCt:id => enviarParaAssinar(id),
+  txtCt:id => editarTextoContrato(id),
+  modeloCt:() => modeloContrato(),
+  assEmp:() => assinaturaEmpresa(),
   novoOrc:() => novoOrc(),
   pdfOrc:id => abrirPdfOrc(achar('orcamentos', id)),
   aprovarOrc:id => aprovarOrc(id),
@@ -1177,6 +1433,7 @@ async function entrar(uid) {
   if (!S.empresa) { toast('Construtora não encontrada.'); await API.logout(); return telaLogin(); }
   if (bloqueada(S.empresa) && !isAdmin()) return telaBloqueio();
   await carregarTudo(); S.page = 'dashboard'; montarApp();
+  setTimeout(checarAssinaturas, 1500);
 }
 function telaBloqueio() {
   const e = S.empresa;
@@ -1258,6 +1515,7 @@ async function dadosExemplo() {
 (async () => {
   const q = new URLSearchParams(location.search);
   if (q.get('portal')) return renderPortal(q.get('portal'));
+  if (q.get('assinar')) return renderAssinar(q.get('assinar'));
   try { const uid = await API.uidAtual(); if (uid) await entrar(uid); else telaLogin(q.get('criar') ? 'criar' : 'entrar'); }
   catch (e) { console.error(e); telaLogin(); toast(traduz(e)); }
 })();
