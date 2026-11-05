@@ -38,6 +38,13 @@ Em Clientes → Contratos, botão **Assinar**: enviar o link para o cliente assi
 - Diário de obra no formato RDO: equipe presente (lança as diárias sozinho, sem duplicar), terceirizados, serviços por etapa (atualiza o % do cronograma), clima manhã/tarde, expediente, até 12 fotos, ocorrências, visitas e equipamentos. PDF do RDO assinado pelo responsável.
 - Portal do cliente: equipe na obra por função, galeria de fotos e diário completo.
 
+## Controle da obra
+
+- **Cotação de compras** (Materiais → Cotações): lista de itens, pede preço a até 5 fornecedores pelo WhatsApp, compara lado a lado (frete e prazo inclusos) e fecha com o mais barato, criando o pedido de compra.
+- **Ferramentas e equipamentos** (Materiais): onde está cada equipamento, com quem, situação (em uso, depósito, manutenção), histórico de movimentações e alerta de devolução dos locados.
+- **Curva gasto × avanço** (na obra, aba Etapas): avanço real, gasto em % do orçamento e previsto no cronograma, com diagnóstico de risco de estouro e atraso. O avanço é registrado sozinho a cada atualização.
+- **Relatório mensal em PDF** (botão na obra): versão para o cliente (sem valores) ou interna (com custos por categoria e por etapa).
+
 ## Aditivos de contrato
 
 Em Clientes → Contratos → **Aditivos**: acréscimo (serviço extra) ou supressão, com valor, dias a mais no prazo e forma de pagamento. Assinado na hora ou por link. Ao assinar: o valor vai para o financeiro (a receber), o prazo da obra é prorrogado e o valor do contrato é atualizado.

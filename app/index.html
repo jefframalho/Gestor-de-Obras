@@ -20,6 +20,16 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0e1116;--card:#171b22;--ink:#e8eaee;--mut:#9aa3af;--line:#262c36;--soft:#1c212a;--priSoft:#33230f;
   --side:#0a0d11;--sideAct:#1b212b;--okSoft:#12301f;--warnSoft:#33270e;--badSoft:#3a1616;--infoSoft:#142443;--sh:none}}
+@media (max-width:640px){.curva svg text{font-size:16px}.curva svg text.cvend{display:none}.cvtip{top:60px}}
+.curva{position:relative}.curva svg{stroke:none;fill:none}.curva svg text{stroke:none}.cvleg svg{stroke:none}.cvleg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--mut);margin:4px 0 6px}.cvleg span{display:flex;align-items:center;gap:6px}
+.cvtip{position:absolute;top:34px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:12.5px;box-shadow:0 6px 20px rgba(0,0,0,.12);pointer-events:none;min-width:150px}.cvtip div{display:flex;align-items:center;gap:6px;margin-top:3px}.cvtip div b{margin-left:auto}.cvtip i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.diag{padding:9px 12px;border-radius:10px;margin-bottom:8px;font-size:13.5px;background:var(--soft)}.diag.bad{background:var(--badSoft)}.diag.ok{background:var(--okSoft)}.diag.warn{background:var(--warnSoft)}.diag.info{background:var(--infoSoft)}
+table.cot td,table.cot th{vertical-align:top}table.cot tbody tr{cursor:default}table.cot tbody tr:hover{background:none}table.cot input{width:100%;min-width:90px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);text-align:right}
+table.cot td small{display:block;color:var(--mut);font-size:11.5px;margin-top:2px}table.cot td.min input{border-color:var(--ok);background:var(--okSoft);font-weight:700}table.cot th.win{background:var(--okSoft);color:var(--ok)}table.cot th span{font-size:10.5px;text-transform:none;letter-spacing:0}
+table.cot td.win{background:var(--okSoft)}table.cot tr.tot td{border-top:2px solid var(--line)}table.cot tr.sub td{color:var(--mut)}
+:root{--cv-grid:#e8eaee;--cv-mut:#6b7280;--cv-ink:#16191f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--cv-grid:#262c36;--cv-mut:#9aa3af;--cv-ink:#e8eaee}}
+:root[data-theme="dark"]{--cv-grid:#262c36;--cv-mut:#9aa3af;--cv-ink:#e8eaee}
 :root[data-theme="dark"]{--bg:#0e1116;--card:#171b22;--ink:#e8eaee;--mut:#9aa3af;--line:#262c36;--soft:#1c212a;--priSoft:#33230f;--side:#0a0d11;--sideAct:#1b212b;--okSoft:#12301f;--warnSoft:#33270e;--badSoft:#3a1616;--infoSoft:#142443;--sh:none}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,sans-serif}
@@ -341,7 +351,7 @@ const API = {
 };
 
 /* ---------- estado ---------- */
-const COLS = ['obras','etapas','diario','lancamentos','fornecedores','materiais','movimentos','pedidos','funcionarios','apontamentos','clientes','contratos','orcamentos','vistorias','aditivos'];
+const COLS = ['obras','etapas','diario','lancamentos','fornecedores','materiais','movimentos','pedidos','funcionarios','apontamentos','clientes','contratos','orcamentos','vistorias','aditivos','equipamentos','cotacoes'];
 const S = {uid:null, email:'', perfil:null, eid:null, empresa:null, data:{}, page:'dashboard', obraId:null, tab:{}, filtro:{}};
 const PAPEIS = {admin:'Administrador', engenheiro:'Engenheiro / Mestre de obras', financeiro:'Financeiro'};
 const PERM = {
@@ -380,6 +390,7 @@ const achar = (col, id) => (S.data[col] || []).find(x => x.id === id);
 const nomeDe = (col, id, vazio = '—') => { const o = achar(col, id); return o ? rotulo(col, o) : vazio; };
 function rotulo(col, o) {
   if (col === 'materiais') return `${o.nome} (${o.unidade || 'un'})${o.obraId ? ' — ' + nomeDe('obras', o.obraId) : ' — Depósito'}`;
+  if (col === 'etapas') return `${o.nome} — ${nomeDe('obras', o.obraId)}`;
   if (col === 'contratos') return `Contrato ${o.numero || ''} — ${nomeDe('clientes', o.clienteId)}`;
   return o.nome || o.descricao || o.id;
 }
@@ -431,7 +442,7 @@ const SCHEMA = {
     {k:'foto', l:'Foto', type:'image'}]},
   lancamentos:{titulo:'Lançamento financeiro', fields:[
     {k:'tipo', l:'Tipo', type:'select', opts:['Pagar','Receber'], half:1}, {k:'categoria', l:'Categoria', type:'select', opts:OPC.catLanc, half:1},
-    {k:'descricao', l:'Descrição', req:1}, {k:'obraId', l:'Obra', ...ref('obras', 'Sem obra (administrativo)')},
+    {k:'descricao', l:'Descrição', req:1}, {k:'obraId', l:'Obra', ...ref('obras', 'Sem obra (administrativo)'), half:1}, {k:'etapaId', l:'Etapa da obra (opcional)', ...ref('etapas', 'Sem etapa'), half:1},
     {k:'valor', l:'Valor (R$)', type:'money', req:1, half:1}, {k:'vencimento', l:'Vencimento', type:'date', req:1, half:1},
     {k:'pago', l:'Já foi pago / recebido', type:'check'}]},
   fornecedores:{titulo:'Fornecedor', fields:[
@@ -451,6 +462,11 @@ const SCHEMA = {
     {k:'data', l:'Data do pedido', type:'date', half:1}, {k:'previsaoEntrega', l:'Previsão de entrega', type:'date', half:1},
     {k:'itens', l:'Itens do pedido', type:'textarea', req:1, ph:'50 sacos de cimento CP-II\n10 m³ de areia média'},
     {k:'valor', l:'Valor total (R$)', type:'money', half:1}, {k:'status', l:'Status', type:'select', opts:OPC.statusPed, half:1}]},
+  equipamentos:{titulo:'Equipamento / ferramenta', fields:[
+    {k:'nome', l:'Nome', req:1, ph:'Ex.: Betoneira 400 L, Martelete, Andaime'}, {k:'codigo', l:'Código / patrimônio', half:1, ph:'Ex.: BT-01'},
+    {k:'categoria', l:'Categoria', type:'select', opts:['Máquina','Ferramenta elétrica','Ferramenta manual','Andaime / escora','Veículo','Outro'], half:1},
+    {k:'origem', l:'Origem', type:'select', opts:['Próprio','Locado'], half:1}, {k:'locadora', l:'Locadora (se locado)', half:1},
+    {k:'devolucao', l:'Devolver até (se locado)', type:'date', half:1}, {k:'valor', l:'Valor (compra ou aluguel)', type:'money', half:1}, {k:'obs', l:'Observações', type:'textarea'}]},
   funcionarios:{titulo:'Funcionário', fields:[
     {k:'nome', l:'Nome', req:1}, {k:'funcao', l:'Função', type:'select', opts:['Pedreiro','Ajudante / Servente','Mestre de obras','Encarregado','Engenheiro civil','Arquiteto(a)','Eletricista','Encanador','Pintor','Carpinteiro','Armador','Gesseiro','Azulejista','Serralheiro','Vidraceiro','Operador de máquinas','Técnico de segurança','Outro'], half:1},
     {k:'tipo', l:'Contratação', type:'select', opts:['Diarista','Empreiteiro (por produção)','CLT','Terceirizado'], half:1},
@@ -537,7 +553,7 @@ const HOOK = {
       if (o.portalToken) await API.setPortal(o.portalToken, {empresaId:S.eid, ativo:false});
     }
   },
-  etapas:{depois:o => syncPortal(o.obraId), excluir:o => setTimeout(() => syncPortal(o.obraId), 50)},
+  etapas:{depois:async o => { await registrarAvanco(o.obraId); syncPortal(o.obraId); }, excluir:o => setTimeout(async () => { await registrarAvanco(o.obraId); syncPortal(o.obraId); render(); }, 50)},
   diario:{depois:o => syncPortal(o.obraId), excluir:async o => { if (o.temFoto) await API.del(S.eid, 'fotos', o.id).catch(() => {}); setTimeout(() => syncPortal(o.obraId), 50); }},
   lancamentos:{antes:(o, old) => { if (o.pago && !old.pago) o.dataPagamento = hoje(); if (!o.pago) o.dataPagamento = ''; }},
   funcionarios:{form:() => { const fn = $('#f_funcao'), di = $('#f_diaria'); let ult = diariaPadrao(fn.value);
@@ -611,7 +627,7 @@ function render() {
   document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.a === S.page));
   const fn = {dashboard:pgDash, obras:pgObras, obra:pgObra, financeiro:pgFin, materiais:pgMat, equipe:pgEquipe, clientes:pgCli, orcamentos:pgOrc, config:pgCfg, admin:pgAdmin}[S.page] || pgDash;
   const m = $('#main'); if (!m) return;
-  const r = fn(); if (r && r.then) r.then(h => { m.innerHTML = aviso() + h; }); else m.innerHTML = aviso() + r;
+  const r = fn(); if (r && r.then) r.then(h => { m.innerHTML = aviso() + h; ligarCurva(); }); else { m.innerHTML = aviso() + r; ligarCurva(); }
 }
 function aviso() {
   const e = S.empresa; if (!e || S.page === 'admin') return '';
@@ -652,6 +668,7 @@ function pgDash() {
     <div style="display:grid;gap:16px;align-content:start">
     ${fin ? `<div class="card"><h3>Contas dos próximos 7 dias e vencidas</h3><div class="list">${prox.length ? prox.map(l => `<div class="it" style="cursor:pointer" data-act="edit" data-a="lancamentos" data-b="${l.id}"><div><b>${esc(l.descricao)}</b><small>${fdata(l.vencimento)} · ${l.tipo === 'Receber' ? 'a receber' : 'a pagar'}</small></div><div style="text-align:right"><b style="color:${l.tipo === 'Receber' ? 'var(--ok)' : 'inherit'}">${brl(l.valor)}</b><br>${statusLanc(l)}</div></div>`).join('') : '<p style="color:var(--mut)">Nada para os próximos dias. 👍</p>'}</div></div>` : ''}
     <div class="card"><h3>Estoque abaixo do mínimo</h3><div class="list">${baixo.length ? baixo.map(m => `<div class="it" style="cursor:pointer" data-act="edit" data-a="materiais" data-b="${m.id}"><div><b>${esc(m.nome)}</b><small>${esc(m.obraId ? nomeDe('obras', m.obraId) : 'Depósito central')}</small></div><span class="badge b-bad">${num(m.quantidade)} / mín. ${num(m.minimo)} ${esc(m.unidade || '')}</span></div>`).join('') : '<p style="color:var(--mut)">Tudo em dia.</p>'}</div></div>
+    ${(() => { const v = D.equipamentos.filter(devolucaoAlerta); return v.length ? `<div class="card"><h3>Equipamentos locados para devolver</h3><div class="list">${v.map(e => `<div class="it" style="cursor:pointer" data-act="moverEq" data-a="${e.id}"><div><b>${esc(e.nome)}</b><small>${esc(e.obraId ? nomeDe('obras', e.obraId) : 'Depósito')}${e.locadora ? ' · ' + esc(e.locadora) : ''}</small></div><span class="badge ${diasAte(e.devolucao) < 0 ? 'b-bad' : 'b-warn'}">${diasAte(e.devolucao) < 0 ? 'Atrasado ' + Math.abs(diasAte(e.devolucao)) + 'd' : diasAte(e.devolucao) === 0 ? 'Hoje' : 'Em ' + diasAte(e.devolucao) + ' dia(s)'}</span></div>`).join('')}</div></div>` : ''; })()}
     ${(() => { const v = D.funcionarios.filter(f => f.ativo !== false && docsVencendo(f).length); return v.length ? `<div class="card"><h3>Documentos da equipe vencendo</h3><div class="list">${v.map(f => `<div class="it" style="cursor:pointer" data-act="edit" data-a="funcionarios" data-b="${f.id}"><div><b>${esc(f.nome)}</b><small>${esc(f.funcao || '')}</small></div><div>${badgeDocs(f)}</div></div>`).join('')}</div></div>` : ''; })()}</div></div>`;
 }
 
@@ -685,7 +702,7 @@ function pgObra() {
   const abas = [['etapas','Etapas e cronograma'], ['diario','Diário de obra'], ...(fin ? [['fin','Financeiro']] : []), ['mat','Materiais'], ['eq','Equipe'], ['vist','Vistoria e entrega']];
   const at = tabAt('obra', 'etapas');
   let corpo = '';
-  if (at === 'etapas') corpo = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="etapas" data-b="${o.id}">+ Etapa</button></div>${gantt(et)}`
+  if (at === 'etapas') corpo = cardCurva(o, fin) + `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="etapas" data-b="${o.id}">+ Etapa</button></div>${gantt(et)}`
     + tabela('etapas', et, [{h:'Etapa', k:'nome'}, {h:'Período', f:e => e.inicio || e.fim ? `${fdata(e.inicio)} a ${fdata(e.fim)}` : '<span style="color:var(--mut)">a definir</span>'}, ...(fin ? [{h:'Custo previsto', r:1, f:e => brl(e.custoPrevisto)}] : []), {h:'Andamento', f:e => `<div style="min-width:150px">${barra(+e.percentual || 0, +e.percentual >= 100 ? 'g' : '')}</div>`}], 'Cadastre as etapas (fundação, estrutura, alvenaria...) para acompanhar o avanço e o cronograma.');
   else if (at === 'diario') {
     const ds = S.data.diario.filter(d => d.obraId === o.id).sort((a, b) => b.data.localeCompare(a.data) || b.criadoEm - a.criadoEm);
@@ -699,7 +716,8 @@ function pgObra() {
   } else if (at === 'mat') {
     corpo = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn" data-act="novo" data-a="movimentos">Entrada / saída</button><button class="btn pri" data-act="novo" data-a="pedidos" data-b="${o.id}">+ Pedido de compra</button></div>`
       + `<h3 style="font-size:14px">Materiais nesta obra</h3>` + tabelaMat(S.data.materiais.filter(m => m.obraId === o.id))
-      + `<h3 style="font-size:14px;margin-top:20px">Pedidos de compra</h3>` + tabelaPed(S.data.pedidos.filter(x => x.obraId === o.id));
+      + `<h3 style="font-size:14px;margin-top:20px">Pedidos de compra</h3>` + tabelaPed(S.data.pedidos.filter(x => x.obraId === o.id))
+      + `<h3 style="font-size:14px;margin-top:20px">Ferramentas e equipamentos nesta obra</h3>` + tabelaEq(S.data.equipamentos.filter(e => e.obraId === o.id));
   } else {
     const fs_ = S.data.funcionarios.filter(f => f.obraId === o.id && f.ativo !== false);
     const aps = S.data.apontamentos.filter(a => a.obraId === o.id);
@@ -709,7 +727,7 @@ function pgObra() {
   }
   return `<button class="btn sm" data-act="nav" data-a="obras" style="margin-bottom:14px">← Obras</button>`
   + topo(esc(o.nome) + ' ' + badgeObra(o.status), `${esc(nomeDe('clientes', o.clienteId, 'Sem cliente'))}${o.endereco ? ' · ' + esc(o.endereco) : ''} · ${fdata(o.inicio)} → ${fdata(o.previsao)}`,
-     `${o.portal && o.portalToken ? `<button class="btn" data-act="portal" data-a="${o.id}">🔗 Link do cliente</button>` : ''}<button class="btn" data-act="edit" data-a="obras" data-b="${o.id}">Editar obra</button>`)
+     `${o.portal && o.portalToken ? `<button class="btn" data-act="portal" data-a="${o.id}">🔗 Link do cliente</button>` : ''}<button class="btn" data-act="relatorio" data-a="${o.id}">📊 Relatório mensal</button><button class="btn" data-act="edit" data-a="obras" data-b="${o.id}">Editar obra</button>`)
   + `<div class="kpis"><div class="kpi"><span>Avanço físico</span><b>${Math.round(p)}%</b>${barra(p)}</div>
     ${fin ? `<div class="kpi"><span>Orçamento</span><b>${brl(orc)}</b></div>
     <div class="kpi ${orc && g + ap > orc ? 'alert' : ''}"><span>Gasto (pago)</span><b>${brl(g)}</b><small>+ ${brl(ap)} a pagar${orc ? ` · ${Math.round((g + ap) / orc * 100)}% do orçamento` : ''}</small></div>
@@ -770,9 +788,12 @@ function pgMat() {
     + tabela('movimentos', S.data.movimentos.slice().sort((a, b) => (b.data || '').localeCompare(a.data || '') || b.criadoEm - a.criadoEm), [{h:'Data', f:m => fdata(m.data)}, {h:'Material', f:m => esc(nomeDe('materiais', m.materialId))},
       {h:'Tipo', f:m => `<span class="badge ${m.tipo === 'Entrada' ? 'b-ok' : 'b-warn'}">${m.tipo}</span>`}, {h:'Qtd.', r:1, f:m => num(m.quantidade)}, {h:'Obs.', k:'obs'}], 'Nenhuma movimentação.');
   else if (at === 'ped') c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="pedidos">+ Pedido de compra</button></div>` + tabelaPed(S.data.pedidos.slice());
+  else if (at === 'cot') c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novoCot">+ Nova cotação</button></div>` + tabelaCot(S.data.cotacoes.slice());
+  else if (at === 'eqp') { const es = S.data.equipamentos.filter(e => e.status !== 'Baixado'); c = `<div class="kpis">${[['Na obra', es.filter(e => e.obraId).length], ['No depósito', es.filter(e => !e.obraId && e.status === 'Disponível').length], ['Em manutenção', es.filter(e => e.status === 'Manutenção').length], ['Locados', es.filter(e => e.origem === 'Locado').length]].map(([l, v]) => `<div class="kpi"><span>${l}</span><b>${v}</b></div>`).join('')}</div>
+    <div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="equipamentos">+ Equipamento</button></div>` + tabelaEq(S.data.equipamentos.slice()); }
   else c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="fornecedores">+ Fornecedor</button></div>`
     + tabela('fornecedores', S.data.fornecedores.slice().sort((a, b) => a.nome.localeCompare(b.nome)), [{h:'Nome', k:'nome'}, {h:'Fornece', k:'categoria'}, {h:'WhatsApp', k:'telefone'}, {h:'E-mail', k:'email'}, {h:'Pedidos', r:1, f:f => S.data.pedidos.filter(p => p.fornecedorId === f.id).length}], 'Nenhum fornecedor.');
-  return topo('Materiais', 'Estoque por obra, entradas e saídas, compras e fornecedores') + tabs('mat', [['est','Estoque'], ['mov','Movimentações'], ['ped','Pedidos de compra'], ['for','Fornecedores']]) + c;
+  return topo('Materiais', 'Estoque, cotações, compras, ferramentas e fornecedores') + tabs('mat', [['est','Estoque'], ['mov','Movimentações'], ['cot','Cotações'], ['ped','Pedidos de compra'], ['eqp','Ferramentas e equipamentos'], ['for','Fornecedores']]) + c;
 }
 
 /* ---------- equipe ---------- */
@@ -1718,6 +1739,7 @@ function editorDiario(rec) {
       await salvar('diario', d);
       await sincronizarDiarias(d);
       for (const s of d.servicos) { if (s.etapaId && s.pct !== '' && s.pct != null) { const e = achar('etapas', s.etapaId); if (e && +e.percentual !== +s.pct) await salvar('etapas', {...e, percentual:+s.pct}); } }
+      await registrarAvanco(d.obraId);
       await syncPortal(d.obraId);
       fecharModal(); render(); toast('Diário salvo');
     } catch (err) { console.error(err); toast('Erro ao salvar: ' + err.message); $('#r_ok').disabled = false; }
@@ -1784,6 +1806,282 @@ function cardDiario(d) {
     <div class="row" style="margin-top:10px"><button class="btn sm" data-act="rdoPdf" data-a="${d.id}">RDO em PDF</button>${d.assinaturaResp ? '' : `<button class="btn sm" data-act="rdoAss" data-a="${d.id}">Assinar RDO</button>`}</div></div>`;
 }
 
+/* ===================== CURVA GASTO × AVANÇO ===================== */
+const tms = s => +new Date(s + 'T12:00');
+async function registrarAvanco(oid) {
+  const o = achar('obras', oid); if (!o) return;
+  const p = Math.round(progressoObra(oid) * 10) / 10;
+  const h = (o.avancoHist || []).filter(x => x.d !== hoje()); h.push({d:hoje(), p}); h.sort((a, b) => a.d.localeCompare(b.d));
+  if (h.length > 400) h.splice(0, h.length - 400);
+  await salvar('obras', {...o, avancoHist:h});
+}
+function avancoEm(o, dia) {
+  const pts = [...(o.avancoHist || [])].sort((a, b) => a.d.localeCompare(b.d));
+  if (dia >= hoje()) return progressoObra(o.id);
+  const ini = o.inicio && (!pts.length || o.inicio < pts[0].d) ? [{d:o.inicio, p:0}] : [];
+  const all = [...ini, ...pts, {d:hoje(), p:progressoObra(o.id)}];
+  if (dia <= all[0].d) return all[0].d === dia ? all[0].p : 0;
+  for (let i = 1; i < all.length; i++) if (dia <= all[i].d) { const a = all[i - 1], b = all[i], f = (tms(dia) - tms(a.d)) / Math.max(1, tms(b.d) - tms(a.d)); return a.p + (b.p - a.p) * f; }
+  return all[all.length - 1].p;
+}
+function previstoEm(oid, dia) {
+  const et = S.data.etapas.filter(e => e.obraId === oid && e.inicio && e.fim); if (!et.length) return null;
+  const tot = et.reduce((s, e) => s + (+e.custoPrevisto || 0), 0), peso = e => tot > 0 ? (+e.custoPrevisto || 0) / tot : 1 / et.length;
+  return et.reduce((s, e) => { const a = tms(e.inicio), b = tms(e.fim), t = tms(dia); const f = t <= a ? 0 : t >= b ? 1 : (t - a) / Math.max(1, b - a); return s + peso(e) * f * 100; }, 0);
+}
+const gastoAte = (oid, dia) => lancObra(oid).filter(l => l.tipo === 'Pagar' && l.pago && (l.dataPagamento || l.vencimento) <= dia).reduce((s, l) => s + (+l.valor || 0), 0);
+function serieCurva(o) {
+  const ets = S.data.etapas.filter(e => e.obraId === o.id && e.inicio && e.fim);
+  const ini = o.inicio || (ets.map(e => e.inicio).sort()[0]) || hoje();
+  const fimPrev = [o.previsao, ...ets.map(e => e.fim)].filter(Boolean).sort().pop() || hoje();
+  const fim = fimPrev > hoje() ? fimPrev : hoje();
+  const dias = Math.max(1, (tms(fim) - tms(ini)) / 864e5), passo = Math.max(1, Math.round(dias / 60));
+  const datas = []; for (let d = ini; d < fim; d = addDias(d, passo)) datas.push(d); datas.push(fim);
+  if (ini <= hoje() && !datas.includes(hoje())) { datas.push(hoje()); datas.sort(); }
+  const orc = +o.orcamento || 0;
+  return datas.map(d => ({d, prev:previstoEm(o.id, d), real:d <= hoje() ? avancoEm(o, d) : null, gasto:d <= hoje() && orc ? gastoAte(o.id, d) / orc * 100 : null}));
+}
+function diagnosticoCurva(o) {
+  const orc = +o.orcamento || 0, av = progressoObra(o.id), gp = orc ? gastoObra(o.id) / orc * 100 : null, pv = previstoEm(o.id, hoje());
+  const msgs = [];
+  if (gp != null && av > 3) {
+    const proj = gastoObra(o.id) / (av / 100);
+    if (gp - av > 10) msgs.push(['bad', `Já foram gastos <b>${Math.round(gp)}%</b> do orçamento com só <b>${Math.round(av)}%</b> da obra pronta. Nesse ritmo, a obra deve custar cerca de <b>${brl(proj)}</b> (${Math.round(proj / orc * 100 - 100)}% acima do orçado).`]);
+    else if (gp - av > 3) msgs.push(['warn', `O gasto (${Math.round(gp)}%) está um pouco à frente do avanço (${Math.round(av)}%). Vale acompanhar de perto.`]);
+    else msgs.push(['ok', `Gasto (${Math.round(gp)}% do orçamento) compatível com o avanço da obra (${Math.round(av)}%). Projeção ao final: <b>${brl(proj)}</b>.`]);
+  } else if (gp == null) msgs.push(['info', 'Informe o orçamento da obra (Editar obra) para comparar o gasto com o avanço.']);
+  if (pv != null && o.status !== 'Concluída') {
+    if (pv - av > 10) msgs.push(['bad', `Obra <b>atrasada</b>: o cronograma previa <b>${Math.round(pv)}%</b> para hoje e ela está em <b>${Math.round(av)}%</b>.`]);
+    else if (pv - av > 3) msgs.push(['warn', `Levemente atrás do cronograma: previsto ${Math.round(pv)}%, realizado ${Math.round(av)}%.`]);
+    else msgs.push(['ok', `Dentro do cronograma: previsto ${Math.round(pv)}%, realizado ${Math.round(av)}%.`]);
+  }
+  return msgs;
+}
+const COR_CURVA = {real:'#2a78d6', gasto:'#eb6834', prev:'#8a8f98'};
+function svgCurva(o, opt = {}) {
+  const pts = serieCurva(o), comGasto = opt.gasto !== false && pts.some(p => p.gasto != null);
+  const W = 760, H = 270, m = {l:48, r:92, t:14, b:30}, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const ymax = Math.max(100, ...pts.map(p => comGasto ? (p.gasto || 0) : 0)); const ytop = Math.min(160, Math.ceil(ymax / 25) * 25);
+  const x0 = tms(pts[0].d), x1 = tms(pts[pts.length - 1].d), X = d => m.l + (x1 > x0 ? (tms(d) - x0) / (x1 - x0) : 0) * iw, Y = v => m.t + ih - v / ytop * ih;
+  const linha = (k, cor, dash) => { const q = pts.filter(p => p[k] != null); if (q.length < 2) return ''; return `<path d="${q.map((p, i) => (i ? 'L' : 'M') + X(p.d).toFixed(1) + ' ' + Y(p[k]).toFixed(1)).join(' ')}" fill="none" stroke="${cor}" stroke-width="2" ${dash ? 'stroke-dasharray="5 4"' : ''} stroke-linejoin="round" stroke-linecap="round"/>`; };
+  const fimRot = (k, nome, cor) => { const q = pts.filter(p => p[k] != null); if (!q.length) return null; const p = q[q.length - 1]; return {y:Y(p[k]), x:X(p.d), t:`${nome} ${Math.round(p[k])}%`, cor}; };
+  const rots = [fimRot('real', 'Real', COR_CURVA.real), comGasto && fimRot('gasto', 'Gasto', COR_CURVA.gasto), fimRot('prev', 'Previsto', COR_CURVA.prev)].filter(Boolean).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < rots.length; i++) if (rots[i].y - rots[i - 1].y < 13) rots[i].y = rots[i - 1].y + 13;
+  const grade = []; for (let v = 0; v <= ytop; v += 25) grade.push(`<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--cv-grid)" stroke-width="1"/><text x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="10.5" fill="var(--cv-mut)">${v}%</text>`);
+  const meses = []; { const d = new Date(x0); d.setDate(1); d.setMonth(d.getMonth() + 1); while (+d <= x1) { const s = d.toISOString().slice(0, 10); meses.push(`<text x="${X(s)}" y="${H - 8}" text-anchor="middle" font-size="10.5" fill="var(--cv-mut)">${d.toLocaleDateString('pt-BR', {month:'short'}).replace('.', '')}/${String(d.getFullYear()).slice(2)}</text>`); d.setMonth(d.getMonth() + (x1 - x0 > 400 * 864e5 ? 3 : 1)); } }
+  const hx = X(hoje()), mostraHoje = tms(hoje()) > x0 && tms(hoje()) < x1;
+  const id = 'cv' + Math.random().toString(36).slice(2, 7);
+  const leg = [['Avanço real', COR_CURVA.real, ''], ...(comGasto ? [['Gasto (% do orçamento)', COR_CURVA.gasto, '']] : []), ['Previsto no cronograma', COR_CURVA.prev, '5 4']];
+  return `<div class="curva" id="${id}" data-oid="${o.id}" data-gasto="${comGasto ? 1 : 0}"><div class="cvleg">${leg.map(([n, c, d]) => `<span><svg width="22" height="8"><line x1="1" x2="21" y1="4" y2="4" stroke="${c}" stroke-width="2" ${d ? `stroke-dasharray="${d}"` : ''}/></svg>${n}</span>`).join('')}</div>
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Curva de gasto e avanço da obra ${esc(o.nome)}" style="width:100%;height:auto;display:block">${grade.join('')}${meses.join('')}
+    ${mostraHoje ? `<line x1="${hx}" x2="${hx}" y1="${m.t}" y2="${m.t + ih}" stroke="var(--cv-mut)" stroke-dasharray="2 3"/><text x="${hx}" y="${m.t - 3}" text-anchor="middle" font-size="10" fill="var(--cv-mut)">hoje</text>` : ''}
+    ${linha('prev', COR_CURVA.prev, true)}${comGasto ? linha('gasto', COR_CURVA.gasto) : ''}${linha('real', COR_CURVA.real)}
+    ${rots.map(r => `<text class="cvend" x="${m.l + iw + 6}" y="${r.y + 4}" font-size="11" font-weight="600" fill="var(--cv-ink)"><tspan fill="${r.cor}">●</tspan> ${r.t}</text>`).join('')}
+    ${opt.interativo ? `<line class="cvx" x1="0" x2="0" y1="${m.t}" y2="${m.t + ih}" stroke="var(--cv-ink)" stroke-opacity=".35" style="display:none"/><rect class="cvhit" x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent"/>` : ''}</svg>
+  ${opt.interativo ? '<div class="cvtip" style="display:none"></div>' : ''}</div>`;
+}
+function ligarCurva() {
+  document.querySelectorAll('.curva').forEach(el => {
+    const hit = el.querySelector('.cvhit'); if (!hit || el.dataset.ok) return; el.dataset.ok = 1;
+    const o = achar('obras', el.dataset.oid), pts = serieCurva(o), svg = el.querySelector('svg[role=img]'), tip = el.querySelector('.cvtip'), lx = el.querySelector('.cvx');
+    const W = 760, m = {l:48, r:92}, iw = W - m.l - m.r, x0 = tms(pts[0].d), x1 = tms(pts[pts.length - 1].d);
+    const mover = ev => {
+      const b = svg.getBoundingClientRect(), cx = ev.touches ? ev.touches[0].clientX : ev.clientX, vx = (cx - b.left) / b.width * W;
+      const t = x0 + (vx - m.l) / iw * (x1 - x0); let p = pts[0]; for (const q of pts) if (Math.abs(tms(q.d) - t) < Math.abs(tms(p.d) - t)) p = q;
+      const px = m.l + (tms(p.d) - x0) / Math.max(1, x1 - x0) * iw; lx.setAttribute('x1', px); lx.setAttribute('x2', px); lx.style.display = '';
+      tip.innerHTML = `<b>${fdata(p.d)}</b>${p.real != null ? `<div><i style="background:${COR_CURVA.real}"></i>Avanço real <b>${Math.round(p.real)}%</b></div>` : ''}${el.dataset.gasto === '1' && p.gasto != null ? `<div><i style="background:${COR_CURVA.gasto}"></i>Gasto <b>${Math.round(p.gasto)}%</b></div>` : ''}${p.prev != null ? `<div><i style="background:${COR_CURVA.prev}"></i>Previsto <b>${Math.round(p.prev)}%</b></div>` : ''}`;
+      tip.style.display = ''; const tx = (px / W) * b.width; tip.style.left = Math.min(b.width - tip.offsetWidth - 4, Math.max(4, tx + 12)) + 'px';
+    };
+    hit.addEventListener('mousemove', mover); hit.addEventListener('touchstart', mover, {passive:true}); hit.addEventListener('touchmove', mover, {passive:true});
+    hit.addEventListener('mouseleave', () => { tip.style.display = 'none'; lx.style.display = 'none'; });
+  });
+}
+function cardCurva(o, fin) {
+  const msgs = diagnosticoCurva(o).filter(m => fin || !/orçamento|gast/i.test(m[1]));
+  return `<div class="card" style="margin-bottom:16px"><h3>${fin ? 'Gasto × avanço da obra' : 'Avanço da obra × cronograma'}</h3>
+    ${msgs.map(([t, h]) => `<div class="diag ${t}">${({bad:'⚠️', warn:'👀', ok:'✅', info:'ℹ️'})[t]} ${h}</div>`).join('')}
+    ${svgCurva(o, {gasto:fin, interativo:true})}
+    <p style="color:var(--mut);font-size:12px;margin:8px 0 0">O avanço real é registrado a cada atualização das etapas e do diário. Gasto = contas pagas da obra ÷ orçamento.</p></div>`;
+}
+
+/* ===================== FERRAMENTAS E EQUIPAMENTOS ===================== */
+const ST_EQ = {'Disponível':'b-ok', 'Em uso':'b-info', 'Manutenção':'b-warn', 'Baixado':'b-mut'};
+const eqDesde = e => { const h = e.historico || []; return h.length ? h[h.length - 1].data : (e.criadoEm ? iso(e.criadoEm) : ''); };
+const devolucaoAlerta = e => e.origem === 'Locado' && e.devolucao && e.status !== 'Baixado' && diasAte(e.devolucao) <= 3;
+function tabelaEq(es) {
+  return tabela('equipamentos', es.sort((a, b) => a.nome.localeCompare(b.nome)), [
+    {h:'Equipamento', f:e => `<b>${esc(e.nome)}</b>${e.codigo ? ` <small style="color:var(--mut)">#${esc(e.codigo)}</small>` : ''}<br><small style="color:var(--mut)">${esc(e.categoria || '')}${e.origem === 'Locado' ? ` · locado${e.locadora ? ' de ' + esc(e.locadora) : ''}` : ''}</small>`},
+    {h:'Onde está', f:e => esc(e.obraId ? nomeDe('obras', e.obraId) : 'Depósito')}, {h:'Com quem', f:e => esc(e.responsavelId ? nomeDe('funcionarios', e.responsavelId) : '—')},
+    {h:'Situação', f:e => `<span class="badge ${ST_EQ[e.status] || 'b-mut'}">${esc(e.status || 'Disponível')}</span>${devolucaoAlerta(e) ? `<br><span class="badge ${diasAte(e.devolucao) < 0 ? 'b-bad' : 'b-warn'}" style="margin-top:3px">Devolver ${diasAte(e.devolucao) < 0 ? 'vencido' : diasAte(e.devolucao) === 0 ? 'hoje' : 'em ' + diasAte(e.devolucao) + 'd'}</span>` : ''}`},
+    {h:'Desde', f:e => fdata(eqDesde(e))},
+    {h:'', r:1, f:e => `<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm pri" data-act="moverEq" data-a="${e.id}">Movimentar</button><button class="btn sm" data-act="histEq" data-a="${e.id}">Histórico</button></div>`}],
+    'Nenhum equipamento cadastrado. Cadastre betoneira, andaimes, serras, marteletes… e saiba sempre onde cada um está.');
+}
+function moverEquipamento(id) {
+  const e = achar('equipamentos', id), at = S.data.funcionarios.filter(f => f.ativo !== false);
+  modal(`<h3>Movimentar: ${esc(e.nome)}</h3><p style="color:var(--mut);margin-top:0">Agora: <b>${esc(e.obraId ? nomeDe('obras', e.obraId) : 'Depósito')}</b>${e.responsavelId ? ' com ' + esc(nomeDe('funcionarios', e.responsavelId)) : ''} · ${esc(e.status || 'Disponível')}</p>
+    <div class="f2"><div class="fld"><label>Para onde vai</label><select id="m_dest"><option value="">Depósito</option>${S.data.obras.filter(o => o.status !== 'Concluída').map(o => `<option value="${o.id}" ${o.id === e.obraId ? 'selected' : ''}>${esc(o.nome)}</option>`).join('')}</select></div>
+    <div class="fld"><label>Responsável (quem leva)</label><select id="m_resp"><option value="">— Ninguém —</option>${at.map(f => `<option value="${f.id}" ${f.id === e.responsavelId ? 'selected' : ''}>${esc(f.nome)} (${esc(f.funcao || '')})</option>`).join('')}</select></div>
+    <div class="fld"><label>Situação</label><select id="m_st">${Object.keys(ST_EQ).map(s => `<option ${s === e.status ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+    <div class="fld"><label>Data</label><input type="date" id="m_data" value="${hoje()}"></div>
+    <div class="fld" style="grid-column:1/-1"><label>Observação</label><input id="m_obs" placeholder="Ex.: saiu com a lâmina nova; voltou com o cabo danificado"></div></div>
+    <div class="mact"><span style="flex:1"></span><button class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri" id="m_ok">Confirmar</button></div>`);
+  $('#m_dest').onchange = () => { const s = $('#m_st'); if (s.value !== 'Manutenção' && s.value !== 'Baixado') s.value = $('#m_dest').value ? 'Em uso' : 'Disponível'; };
+  $('#m_ok').onclick = async () => {
+    const x = {...e, obraId:$('#m_dest').value, responsavelId:$('#m_resp').value, status:$('#m_st').value};
+    x.historico = [...(e.historico || []), {data:$('#m_data').value || hoje(), obraId:x.obraId, responsavelId:x.responsavelId, status:x.status, obs:$('#m_obs').value.trim(), por:S.perfil.nome || ''}].slice(-200);
+    await salvar('equipamentos', x); fecharModal(); render(); toast('Movimentação registrada');
+  };
+}
+function historicoEquipamento(id) {
+  const e = achar('equipamentos', id), h = [...(e.historico || [])].reverse();
+  modal(`<h3>Histórico: ${esc(e.nome)}</h3>${h.length ? `<div class="list">${h.map(x => `<div class="it"><div><b>${fdata(x.data)} → ${esc(x.obraId ? nomeDe('obras', x.obraId) : 'Depósito')}</b><small>${esc(x.status || '')}${x.responsavelId ? ' · com ' + esc(nomeDe('funcionarios', x.responsavelId)) : ''}${x.por ? ' · registrado por ' + esc(x.por) : ''}</small>${x.obs ? `<small>“${esc(x.obs)}”</small>` : ''}</div></div>`).join('')}</div>` : '<div class="vazio">Sem movimentações ainda.</div>'}
+    <div class="mact"><button class="btn" data-act="edit" data-a="equipamentos" data-b="${e.id}">Editar cadastro</button><span style="flex:1"></span><button class="btn pri" onclick="fecharModal()">Fechar</button></div>`);
+}
+
+/* ===================== COTAÇÃO DE COMPRAS ===================== */
+function totaisCot(c) {
+  const r = {};
+  (c.fornecedores || []).forEach(fid => { const pr = (c.precos || {})[fid] || {}; let tot = 0, n = 0; (c.itens || []).forEach(i => { const v = pr[i.id]; if (v !== '' && v != null) { tot += (+v) * (+i.qtd || 0); n++; } });
+    const frete = +((c.frete || {})[fid] || 0); r[fid] = {tot:tot + frete, frete, completo:n === (c.itens || []).length && n > 0, n}; });
+  const comp = Object.entries(r).filter(([, x]) => x.completo).sort((a, b) => a[1].tot - b[1].tot);
+  const melhor = comp.length ? comp[0][0] : null;
+  let mix = 0, okMix = true, fmix = new Set();
+  (c.itens || []).forEach(i => { let b = null; (c.fornecedores || []).forEach(fid => { const v = ((c.precos || {})[fid] || {})[i.id]; if (v !== '' && v != null && (b == null || +v < b.v)) b = {v:+v, fid}; }); if (b) { mix += b.v * (+i.qtd || 0); fmix.add(b.fid); } else okMix = false; });
+  fmix.forEach(fid => { mix += +((c.frete || {})[fid] || 0); });
+  return {r, melhor, comp, mix:okMix ? mix : null, nmix:fmix.size};
+}
+function textoCotacao(c) {
+  const o = c.obraId ? achar('obras', c.obraId) : null;
+  return `Olá! Aqui é da ${S.empresa.nome}. Poderia me passar o orçamento destes itens${o ? ' para a obra ' + o.nome : ''}?\n\n${(c.itens || []).map(i => `• ${num(i.qtd)} ${i.unidade || 'un'} — ${i.descricao}`).join('\n')}\n\n${c.entregaEm ? 'Entrega em: ' + (o && o.endereco ? o.endereco : c.entregaEm) + '\n' : ''}Por favor, informe o preço unitário de cada item, o frete e o prazo de entrega. Obrigado!`;
+}
+function editorCotacao(rec) {
+  const c = JSON.parse(JSON.stringify(rec)); c.id = c.id || gid(); c.itens = c.itens || []; c.fornecedores = c.fornecedores || []; c.precos = c.precos || {}; c.frete = c.frete || {}; c.prazos = c.prazos || {};
+  if (!c.itens.length) c.itens.push({id:gid(), descricao:'', qtd:1, unidade:'un'});
+  const fechada = c.status === 'Fechada';
+  modal(`<h3>${rec.id ? 'Cotação' : 'Nova cotação'}${c.titulo ? ' — ' + esc(c.titulo) : ''}</h3>${fechada ? `<p class="demo">Cotação fechada com <b>${esc(nomeDe('fornecedores', c.vencedorId))}</b>. O pedido de compra já foi criado.</p>` : ''}
+    <div class="f2"><div class="fld"><label>Título *</label><input id="c_tit" value="${esc(c.titulo)}" placeholder="Ex.: Material da laje" ${fechada ? 'disabled' : ''}></div>
+      <div class="fld"><label>Para a obra</label><select id="c_obra" ${fechada ? 'disabled' : ''}><option value="">Depósito central</option>${S.data.obras.map(o => `<option value="${o.id}" ${o.id === c.obraId ? 'selected' : ''}>${esc(o.nome)}</option>`).join('')}</select></div></div>
+    <div class="rsec"><div class="rsh"><b>1. Itens</b></div><div id="c_itens"></div>${fechada ? '' : '<button type="button" class="btn sm" id="c_addi">+ Item</button>'}</div>
+    <div class="rsec"><div class="rsh"><b>2. Fornecedores</b><small>Escolha de 2 a 5 e peça o preço pelo WhatsApp</small></div><div id="c_forn"></div></div>
+    <div class="rsec"><div class="rsh"><b>3. Preços recebidos</b><small>Digite o preço unitário que cada um passou — o mais barato fica em destaque</small></div><div id="c_grade"></div></div>
+    <div class="mact">${rec.id && !fechada ? '<button type="button" class="btn danger" id="c_del">Excluir</button>' : ''}<span style="flex:1"></span><button type="button" class="btn" onclick="fecharModal()">Fechar</button>${fechada ? '' : '<button type="button" class="btn pri" id="c_ok">Salvar</button>'}</div>`, 'wide');
+  const itens = () => { $('#c_itens').innerHTML = c.itens.map((i, k) => `<div class="rrow"><input type="number" step="any" data-ik="${k}" data-if="qtd" value="${esc(i.qtd)}" style="max-width:90px;flex:0 0 90px" ${fechada ? 'disabled' : ''}><select data-ik="${k}" data-if="unidade" style="max-width:100px;flex:0 0 100px" ${fechada ? 'disabled' : ''}>${OPC.unid.map(u => `<option ${u === i.unidade ? 'selected' : ''}>${u}</option>`).join('')}</select><input data-ik="${k}" data-if="descricao" value="${esc(i.descricao)}" placeholder="Ex.: Cimento CP-II 50 kg" style="flex:3" ${fechada ? 'disabled' : ''}>${fechada ? '' : `<button type="button" class="btn sm danger" data-irm="${k}">×</button>`}</div>`).join(''); };
+  const forn = () => {
+    const fs3 = S.data.fornecedores.slice().sort((a, b) => a.nome.localeCompare(b.nome));
+    $('#c_forn').innerHTML = !fs3.length ? '<p style="color:var(--mut)">Cadastre os fornecedores em Materiais → Fornecedores.</p>' : `<div class="rgrid">${fs3.map(f => { const on = c.fornecedores.includes(f.id);
+      return `<div class="rpes"><input type="checkbox" data-fsel="${f.id}" ${on ? 'checked' : ''} ${fechada ? 'disabled' : ''}><span><b>${esc(f.nome)}</b> <small>${esc(f.categoria || '')}</small></span>${on && f.telefone && !fechada ? `<a class="btn sm" target="_blank" data-fwa="${f.id}" href="#">WhatsApp</a>` : ''}</div>`; }).join('')}</div>`;
+  };
+  const grade = () => {
+    if (!$('#c_grade')) return;
+    const sel = c.fornecedores.map(id => achar('fornecedores', id)).filter(Boolean);
+    if (sel.length < 1 || !c.itens.some(i => i.descricao)) { $('#c_grade').innerHTML = '<p style="color:var(--mut);margin:0">Adicione itens e escolha os fornecedores.</p>'; return; }
+    const t = totaisCot(c);
+    const minItem = i => { let m = null; sel.forEach(f => { const v = (c.precos[f.id] || {})[i.id]; if (v !== '' && v != null && (m == null || +v < m)) m = +v; }); return m; };
+    const inp = (f, campo, val, extra = '') => `<input type="${campo === 'prazo' ? 'text' : 'number'}" step="0.01" data-pf="${f.id}" data-pc="${campo}" value="${esc(val ?? '')}" ${fechada ? 'disabled' : ''} ${extra}>`;
+    $('#c_grade').innerHTML = `<div class="tw"><table class="cot"><thead><tr><th>Item</th>${sel.map(f => `<th class="r ${t.melhor === f.id ? 'win' : ''}">${esc(f.nome)}${t.melhor === f.id ? '<br><span>🏆 menor total</span>' : ''}</th>`).join('')}</tr></thead><tbody>
+      ${c.itens.filter(i => i.descricao).map(i => { const mi = minItem(i); return `<tr><td><b>${esc(i.descricao)}</b><br><small style="color:var(--mut)">${num(i.qtd)} ${esc(i.unidade)}</small></td>${sel.map(f => { const v = (c.precos[f.id] || {})[i.id]; return `<td class="r ${v !== '' && v != null && +v === mi && sel.length > 1 ? 'min' : ''}">${inp(f, 'p:' + i.id, v, 'placeholder="R$ unit."')}<small>${v !== '' && v != null ? brl(+v * (+i.qtd || 0)) : ''}</small></td>`; }).join('')}</tr>`; }).join('')}
+      <tr class="sub"><td>Frete</td>${sel.map(f => `<td class="r">${inp(f, 'frete', c.frete[f.id], 'placeholder="R$ 0,00"')}</td>`).join('')}</tr>
+      <tr class="sub"><td>Prazo de entrega</td>${sel.map(f => `<td class="r">${inp(f, 'prazo', c.prazos[f.id], 'placeholder="Ex.: 2 dias"')}</td>`).join('')}</tr>
+      <tr class="tot"><td>Total</td>${sel.map(f => { const x = t.r[f.id]; return `<td class="r ${t.melhor === f.id ? 'win' : ''}"><b>${x && x.n ? brl(x.tot) : '—'}</b>${x && x.n && !x.completo ? '<br><small style="color:var(--warn)">faltam preços</small>' : ''}${!fechada && x && x.completo ? `<br><button type="button" class="btn sm ${t.melhor === f.id ? 'pri' : ''}" data-fechar="${f.id}">Fechar com este</button>` : ''}</td>`; }).join('')}</tr></tbody></table></div>
+      ${t.comp.length > 1 ? `<div class="diag ok">💰 Fechando com <b>${esc(nomeDe('fornecedores', t.melhor))}</b> você economiza <b>${brl(t.comp[t.comp.length - 1][1].tot - t.comp[0][1].tot)}</b> em relação ao mais caro.</div>` : ''}
+      ${t.mix != null && t.nmix > 1 && t.melhor && t.r[t.melhor].tot - t.mix > 1 ? `<div class="diag info">ℹ️ Comprando cada item no mais barato (${t.nmix} fornecedores) daria <b>${brl(t.mix)}</b> — ${brl(t.r[t.melhor].tot - t.mix)} a menos, mas com mais de uma entrega.</div>` : ''}`;
+  };
+  itens(); forn(); grade();
+  const M = $('#ov');
+  M.addEventListener('input', e => {
+    const el = e.target;
+    if (el.dataset.if) { const i = c.itens[+el.dataset.ik]; i[el.dataset.if] = el.dataset.if === 'qtd' ? (el.value === '' ? '' : +el.value) : el.value; if (el.dataset.if !== 'descricao') grade(); }
+    if (el.dataset.pf) { const f = el.dataset.pf, k = el.dataset.pc, v = el.value === '' ? '' : (k === 'prazo' ? el.value : +el.value);
+      if (k === 'frete') c.frete[f] = v; else if (k === 'prazo') c.prazos[f] = v; else { (c.precos[f] = c.precos[f] || {})[k.slice(2)] = v; } }
+  });
+  M.addEventListener('change', e => { const el = e.target;
+    if (el.dataset.pf && el.dataset.pc !== 'prazo') setTimeout(() => { const at = document.activeElement, sel = at && at.dataset && at.dataset.pf ? `[data-pf="${at.dataset.pf}"][data-pc="${at.dataset.pc}"]` : null; grade(); if (sel) { const n = M.querySelector(sel); if (n) { n.focus(); try { n.select(); } catch (er) {} } } }, 0);
+    if (el.dataset.if === 'unidade') c.itens[+el.dataset.ik].unidade = el.value; if (el.dataset.if === 'descricao') grade();
+    if (el.dataset.fsel) { const id = el.dataset.fsel; if (el.checked) { if (c.fornecedores.length >= 5) { el.checked = false; return toast('Máximo de 5 fornecedores.'); } c.fornecedores.push(id); } else c.fornecedores = c.fornecedores.filter(x => x !== id); forn(); grade(); } });
+  M.addEventListener('click', async e => {
+    const rm = e.target.closest('[data-irm]'), w = e.target.closest('[data-fwa]'), fe = e.target.closest('[data-fechar]');
+    if (rm) { c.itens.splice(+rm.dataset.irm, 1); itens(); grade(); }
+    if (w) { e.preventDefault(); const f = achar('fornecedores', w.dataset.fwa); if (!c.itens.some(i => i.descricao)) return toast('Adicione os itens primeiro.'); window.open(wa(f.telefone, textoCotacao(c)), '_blank'); c.enviadoPara = [...new Set([...(c.enviadoPara || []), f.id])]; }
+    if (fe) {
+      const fid = fe.dataset.fechar, f = achar('fornecedores', fid), t = totaisCot(c), pr = c.precos[fid] || {};
+      if (!confirm(`Fechar a compra com ${f.nome} por ${brl(t.r[fid].tot)}?\n\nO pedido de compra será criado como "Aprovado".`)) return;
+      c.titulo = $('#c_tit').value.trim() || c.titulo || 'Cotação'; c.obraId = $('#c_obra').value;
+      const itensTxt = c.itens.filter(i => i.descricao).map(i => `${num(i.qtd)} ${i.unidade} — ${i.descricao} (${brl(pr[i.id])} un.)`).join('\n') + (+c.frete[fid] ? `\nFrete: ${brl(c.frete[fid])}` : '');
+      const ped = await salvar('pedidos', {fornecedorId:fid, obraId:c.obraId || '', data:hoje(), previsaoEntrega:'', itens:itensTxt, valor:+t.r[fid].tot.toFixed(2), status:'Aprovado', cotacaoId:c.id});
+      await salvar('cotacoes', {...c, status:'Fechada', vencedorId:fid, pedidoId:ped.id, fechadaEm:hoje()});
+      fecharModal(); S.tab.mat = 'ped'; S.page = 'materiais'; render(); toast('Compra fechada! Pedido criado.');
+    }
+  });
+  if (!fechada) {
+    $('#c_addi').onclick = () => { c.itens.push({id:gid(), descricao:'', qtd:1, unidade:'un'}); itens(); const ins = M.querySelectorAll('[data-if="descricao"]'); ins[ins.length - 1].focus(); };
+    $('#c_ok').onclick = async () => { c.titulo = $('#c_tit').value.trim(); c.obraId = $('#c_obra').value; c.itens = c.itens.filter(i => (i.descricao || '').trim());
+      if (!c.titulo) return toast('Dê um título à cotação.'); if (!c.itens.length) return toast('Adicione pelo menos um item.');
+      c.status = c.status || 'Aberta'; c.data = c.data || hoje(); await salvar('cotacoes', c); fecharModal(); render(); toast('Cotação salva'); };
+    if ($('#c_del')) $('#c_del').onclick = async () => { if (!confirm('Excluir esta cotação?')) return; await excluir('cotacoes', c.id); fecharModal(); render(); };
+  }
+}
+function tabelaCot(cs) {
+  return tabela('cotacoes', cs.sort((a, b) => (b.data || '').localeCompare(a.data || '')), [
+    {h:'Data', f:c => fdata(c.data)}, {h:'Cotação', f:c => `<b>${esc(c.titulo)}</b><br><small style="color:var(--mut)">${(c.itens || []).length} item(ns) · ${esc(c.obraId ? nomeDe('obras', c.obraId) : 'Depósito')}</small>`},
+    {h:'Respostas', f:c => { const t = totaisCot(c); return `${Object.values(t.r).filter(x => x.completo).length} de ${(c.fornecedores || []).length}`; }},
+    {h:'Melhor preço', r:1, f:c => { const t = totaisCot(c); return t.melhor ? `<b>${brl(t.r[t.melhor].tot)}</b><br><small style="color:var(--mut)">${esc(nomeDe('fornecedores', t.melhor))}</small>` : '—'; }},
+    {h:'Situação', f:c => c.status === 'Fechada' ? `<span class="badge b-ok">Fechada</span><br><small style="color:var(--mut)">${esc(nomeDe('fornecedores', c.vencedorId))}</small>` : '<span class="badge b-warn">Aberta</span>'}],
+    'Nenhuma cotação. Monte a lista de itens, peça preço para 3 fornecedores pelo WhatsApp e compare lado a lado.');
+}
+
+/* ===================== RELATÓRIO MENSAL DA OBRA ===================== */
+function relatorioMensal(oid) {
+  const o = achar('obras', oid), ini = (o.inicio || hoje()).slice(0, 7), atual = hoje().slice(0, 7), meses = [];
+  for (let m = atual; m >= ini && meses.length < 36; ) { meses.push(m); const d = new Date(m + '-15T12:00'); d.setMonth(d.getMonth() - 1); m = d.toISOString().slice(0, 7); }
+  if (!meses.length) meses.push(atual);
+  const nomeMes = m => { const s = new Date(m + '-15T12:00').toLocaleDateString('pt-BR', {month:'long', year:'numeric'}); return s.charAt(0).toUpperCase() + s.slice(1); };
+  modal(`<h3>Relatório mensal — ${esc(o.nome)}</h3><div class="f2"><div class="fld"><label>Mês</label><select id="rm_mes">${meses.map(m => `<option value="${m}">${nomeMes(m)}</option>`).join('')}</select></div>
+    <div class="fld"><label>Versão</label><select id="rm_tipo"><option value="cliente">Para o cliente (sem valores)</option>${pode('financeiro') ? '<option value="interna">Interna / sócio (com custos)</option>' : ''}</select></div></div>
+    <div class="mact"><span style="flex:1"></span><button class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri" id="rm_ok">Gerar relatório</button></div>`);
+  $('#rm_ok').onclick = () => { gerarRelatorio(oid, $('#rm_mes').value, $('#rm_tipo').value === 'interna', nomeMes($('#rm_mes').value)); fecharModal(); };
+}
+function gerarRelatorio(oid, mes, interna, nomeMesTxt) {
+  const o = achar('obras', oid), c = achar('clientes', o.clienteId) || {}, E = S.empresa;
+  const ini = mes + '-01', ultimo = (() => { const d = new Date(mes + '-01T12:00'); d.setMonth(d.getMonth() + 1); d.setDate(0); return d.toISOString().slice(0, 10); })();
+  const fim = ultimo > hoje() ? hoje() : ultimo, antes = addDias(ini, -1);
+  const avIni = mes <= (o.inicio || '').slice(0, 7) ? 0 : avancoEm(o, antes), avFim = avancoEm(o, fim), pvFim = previstoEm(oid, fim);
+  const rdos = S.data.diario.filter(d => d.obraId === oid && d.data >= ini && d.data <= fim).sort((a, b) => a.data.localeCompare(b.data));
+  const trab = rdos.filter(d => d.expediente !== 'Paralisado'), chuva = rdos.filter(d => [d.climaManha, d.climaTarde, d.clima].includes('Chuvoso'));
+  const efetivo = trab.length ? trab.reduce((s, d) => s + (totalEquipe(d) || +d.equipe || 0), 0) / trab.length : 0;
+  const ocs = rdos.filter(d => d.ocorrencias);
+  const ets = S.data.etapas.filter(e => e.obraId === oid).sort((a, b) => (a.inicio || '9').localeCompare(b.inicio || '9'));
+  const lm = lancObra(oid).filter(l => l.tipo === 'Pagar' && l.pago && (l.dataPagamento || l.vencimento) >= ini && (l.dataPagamento || l.vencimento) <= fim);
+  const gMes = lm.reduce((s, l) => s + +l.valor, 0), gAc = gastoAte(oid, fim), orc = +o.orcamento || 0;
+  const rMes = lancObra(oid).filter(l => l.tipo === 'Receber' && l.pago && (l.dataPagamento || l.vencimento) >= ini && (l.dataPagamento || l.vencimento) <= fim).reduce((s, l) => s + +l.valor, 0);
+  const porCat = {}; lm.forEach(l => { porCat[l.categoria || 'Outros'] = (porCat[l.categoria || 'Outros'] || 0) + +l.valor; });
+  const gEt = e => lancObra(oid).filter(l => l.tipo === 'Pagar' && l.pago && l.etapaId === e.id && (l.dataPagamento || l.vencimento) <= fim).reduce((s, l) => s + +l.valor, 0);
+  const fotos = rdos.flatMap(d => fotosDiario(d).map(f => ({t:f.thumb, d:d.data}))).slice(-12);
+  const eqs = S.data.equipamentos.filter(e => e.obraId === oid && e.status !== 'Baixado');
+  const servs = rdos.flatMap(d => (d.servicos || []).map(s => ({d:d.data, e:(achar('etapas', s.etapaId) || {}).nome || '', t:s.descricao}))).filter(x => x.t || x.e);
+  const kpi = (l, v, s) => `<div class="k"><small>${l}</small><b>${v}</b>${s ? `<span>${s}</span>` : ''}</div>`;
+  const corpo = `<style>.vz{--cv-grid:#e5e7eb;--cv-mut:#6b7280;--cv-ink:#16191f}.rh{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:3px solid #f08a24;padding-bottom:10px}.rh h1{margin:0;font-size:15pt}.rh p{margin:2px 0 0;color:#6b7280;font-size:9pt}.rh .n{text-align:right}.rh .n b{font-size:12.5pt;color:#f08a24;display:block}
+    .kg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.k{background:#f6f7f9;border-radius:7px;padding:8px 10px}.k small{display:block;font-size:7pt;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;font-weight:700}.k b{font-size:14pt;display:block}.k span{font-size:8pt;color:#6b7280}
+    h3.s{font-size:9pt;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;margin:16px 0 6px}.rt{width:100%;border-collapse:collapse;font-size:9pt}.rt th{background:#14181f;color:#fff;text-align:left;padding:5px 8px;font-size:7.5pt;text-transform:uppercase}.rt td{border-bottom:1px solid #e5e7eb;padding:5px 8px}.rt .r{text-align:right}
+    .bar2{height:7px;background:#eef0f3;border-radius:9px;overflow:hidden;min-width:80px}.bar2 i{display:block;height:100%;background:#2a78d6;border-radius:9px}.rg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.rg figure{margin:0}.rg img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:5px}.rg figcaption{font-size:7.5pt;color:#6b7280}
+    .curva{page-break-inside:avoid}.cvleg{display:flex;gap:14px;font-size:8.5pt;color:#4b5563;margin-bottom:4px}.cvleg span{display:flex;gap:5px;align-items:center}.diag{font-size:9pt;padding:7px 10px;border-radius:7px;margin-bottom:6px;background:#f6f7f9}.diag.bad{background:#fdecec}.diag.ok{background:#e8f7ee}.diag.warn{background:#fef6e4}.sec{page-break-inside:avoid}</style>
+    <div class="pg vz"><div class="rh"><div style="display:flex;gap:10px;align-items:center">${E.logo ? `<img src="${E.logo}" style="max-height:44px;max-width:110px">` : ''}<div><h1>${esc(E.nome)}</h1><p>${[E.cnpj ? 'CNPJ ' + esc(E.cnpj) : '', esc(E.telefone || '')].filter(Boolean).join(' · ')}</p></div></div>
+      <div class="n"><b>RELATÓRIO MENSAL DE OBRA</b>${esc(nomeMesTxt)}${interna ? ' · versão interna' : ''}</div></div>
+    <p style="margin:10px 0 0;font-size:10pt"><b>${esc(o.nome)}</b> · ${esc(o.endereco || '')}${c.nome ? ' · Cliente: ' + esc(c.nome) : ''}<br><span style="color:#6b7280;font-size:9pt">Início ${fdata(o.inicio)} · Entrega prevista ${fdata(o.previsao)} · Situação: ${esc(o.status || '')} · Período: ${fdata(ini)} a ${fdata(fim)}</span></p>
+    <div class="kg">${kpi('Avanço físico', Math.round(avFim) + '%', `+${Math.max(0, Math.round(avFim - avIni))} pontos no mês`)}${kpi('Previsto no cronograma', pvFim == null ? '—' : Math.round(pvFim) + '%', pvFim == null ? '' : (pvFim - avFim > 3 ? 'obra atrás do previsto' : 'dentro do previsto'))}
+      ${kpi('Dias trabalhados', trab.length, `${chuva.length} com chuva`)}${kpi('Efetivo médio', num(Math.round(efetivo * 10) / 10), 'pessoas por dia')}
+      ${interna ? kpi('Gasto no mês', brl(gMes), '') + kpi('Gasto acumulado', brl(gAc), orc ? `${Math.round(gAc / orc * 100)}% do orçamento` : '') + kpi('Recebido no mês', brl(rMes), '') + kpi('Orçamento', brl(orc), orc && avFim > 3 ? 'projeção: ' + brl(gAc / (avFim / 100)) : '') : ''}</div>
+    <div class="sec"><h3 class="s">${interna ? 'Gasto × avanço' : 'Avanço × cronograma'}</h3>${diagnosticoCurva(o).filter(m => interna || !/orçamento|gast/i.test(m[1])).map(([t, h]) => `<div class="diag ${t}">${h}</div>`).join('')}${svgCurva(o, {gasto:interna})}</div>
+    <div class="sec"><h3 class="s">Etapas</h3><table class="rt"><thead><tr><th>Etapa</th><th>Período</th><th style="width:150px">Andamento</th>${interna ? '<th class="r">Previsto</th><th class="r">Gasto</th>' : ''}</tr></thead><tbody>${ets.map(e => `<tr><td>${esc(e.nome)}</td><td>${e.inicio ? fdata(e.inicio) + ' a ' + fdata(e.fim) : 'a definir'}</td><td><div style="display:flex;gap:6px;align-items:center"><div class="bar2" style="flex:1"><i style="width:${+e.percentual || 0}%"></i></div><b style="font-size:8.5pt">${+e.percentual || 0}%</b></div></td>${interna ? `<td class="r">${brl(e.custoPrevisto)}</td><td class="r">${gEt(e) ? brl(gEt(e)) : '—'}</td>` : ''}</tr>`).join('')}</tbody></table></div>
+    ${servs.length ? `<div class="sec"><h3 class="s">Serviços executados no mês</h3><table class="rt"><thead><tr><th style="width:70px">Data</th><th style="width:160px">Etapa</th><th>Serviço</th></tr></thead><tbody>${servs.map(s => `<tr><td>${fdata(s.d)}</td><td>${esc(s.e || '—')}</td><td>${esc(s.t || '')}</td></tr>`).join('')}</tbody></table></div>` : ''}
+    ${interna && Object.keys(porCat).length ? `<div class="sec"><h3 class="s">Gastos do mês por categoria</h3><table class="rt"><thead><tr><th>Categoria</th><th class="r">Valor</th><th class="r">%</th></tr></thead><tbody>${Object.entries(porCat).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="r">${brl(v)}</td><td class="r">${Math.round(v / gMes * 100)}%</td></tr>`).join('')}<tr><td><b>Total</b></td><td class="r"><b>${brl(gMes)}</b></td><td></td></tr></tbody></table></div>` : ''}
+    ${ocs.length ? `<div class="sec"><h3 class="s">Ocorrências</h3><table class="rt"><tbody>${ocs.map(d => `<tr><td style="width:70px">${fdata(d.data)}</td><td>${esc(d.ocorrencias)}</td></tr>`).join('')}</tbody></table></div>` : ''}
+    ${eqs.length ? `<div class="sec"><h3 class="s">Equipamentos na obra</h3><p style="font-size:9pt;margin:0">${eqs.map(e => esc(e.nome) + (e.origem === 'Locado' ? ' (locado)' : '')).join(' · ')}</p></div>` : ''}
+    ${fotos.length ? `<div class="sec"><h3 class="s">Registro fotográfico</h3><div class="rg">${fotos.map(f => `<figure><img src="${f.t}" alt=""><figcaption>${fdata(f.d)}</figcaption></figure>`).join('')}</div></div>` : ''}
+    <p style="margin-top:22px;text-align:center;color:#9ca3af;font-size:7.5pt">Relatório gerado em ${new Date().toLocaleString('pt-BR')} pelo Gestor de Obras</p></div>`;
+  abrirDocGen(`Relatorio ${o.nome} - ${nomeMesTxt}`, `Relatório mensal · ${nomeMesTxt}`, corpo);
+}
+
 /* ===================== AÇÕES ===================== */
 const ACT = {
   nav:a => { S.page = a; S.obraId = null; window.scrollTo(0, 0); render(); },
@@ -1794,6 +2092,7 @@ const ACT = {
       obras:{status:'Em andamento', inicio:hoje()}, diario:{data:hoje(), clima:'Ensolarado', obraId:obraId || S.obraId || ''},
       lancamentos:{tipo:'Pagar', vencimento:hoje(), obraId:obraId || ''}, etapas:{obraId:obraId || '', percentual:0},
       movimentos:{data:hoje(), tipo:'Entrada'}, pedidos:{data:hoje(), status:'Aberto', obraId:obraId || ''},
+      equipamentos:{status:'Disponível', origem:'Próprio', categoria:'Máquina', obraId:'', historico:[]},
       funcionarios:{ativo:true, funcao:'Pedreiro', tipo:'Diarista', diaria:diariaPadrao('Pedreiro'), obraId:S.obraId || ''}, apontamentos:{data:hoje(), dias:'1'}, contratos:{assinadoEm:hoje(), parcelas:1, primeiroVenc:hoje()}, materiais:{unidade:'un'}
     }[col] || {};
     if (col === 'movimentos' && !S.data.materiais.length) return toast('Cadastre um material primeiro.');
@@ -1804,6 +2103,10 @@ const ACT = {
   },
   edit:(col, id) => { const r = achar(col, id); if (!r) return; if (col === 'diario') return editorDiario(r); abrirForm(col, r); },
   rdoPdf:id => abrirRDO(id),
+  novoCot:() => editorCotacao({data:hoje(), status:'Aberta', obraId:S.obraId || ''}),
+  moverEq:id => moverEquipamento(id),
+  histEq:id => historicoEquipamento(id),
+  relatorio:id => relatorioMensal(id),
   rdoAss:id => assinarRDO(id),
   salvarDiarias:async () => { const m = {}; document.querySelectorAll('[data-dfun]').forEach(i => { if (i.value !== '') m[i.dataset.dfun] = +i.value; }); await API.setEmpresa(S.eid, {diarias:m}); S.empresa.diarias = m; toast('Diárias salvas'); },
   mov:(mid, tipo) => abrirForm('movimentos', {materialId:mid, tipo, data:hoje()}),
@@ -1923,7 +2226,7 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]');
   if (b) { e.preventDefault(); e.stopPropagation(); const f = ACT[b.dataset.act]; if (f) Promise.resolve(f(b.dataset.a, b.dataset.b)).catch(err => { console.error(err); toast('Erro: ' + err.message); }); return; }
   const tr = e.target.closest('tr[data-id]');
-  if (tr && tr.dataset.col) { if (tr.dataset.col === 'obras') ACT.obra(tr.dataset.id); else if (tr.dataset.col === 'orcamentos') editorOrc(achar('orcamentos', tr.dataset.id)); else ACT.edit(tr.dataset.col, tr.dataset.id); }
+  if (tr && tr.dataset.col) { if (tr.dataset.col === 'obras') ACT.obra(tr.dataset.id); else if (tr.dataset.col === 'orcamentos') editorOrc(achar('orcamentos', tr.dataset.id)); else if (tr.dataset.col === 'cotacoes') editorCotacao(achar('cotacoes', tr.dataset.id)); else if (tr.dataset.col === 'equipamentos') historicoEquipamento(tr.dataset.id); else ACT.edit(tr.dataset.col, tr.dataset.id); }
 });
 document.addEventListener('change', e => {
   const s = e.target.closest('[data-chg]'); if (!s) return;
@@ -2075,6 +2378,18 @@ async function dadosExemplo() {
   }
   await sv('diario', {obraId:o2.id, data:d(-1), climaManha:'Ensolarado', climaTarde:'Ensolarado', clima:'Ensolarado', expediente:'Normal', presentes:fs_.filter(f => f.obraId === o2.id).map(f => ({fid:f.id, dias:'1'})), terceiros:[], servicos:[{etapaId:(S.data.etapas.find(e => e.obraId === o2.id && e.nome.startsWith('Elétrica')) || {}).id || '', descricao:'Troca do quadro de distribuição e fiação do salão', pct:60}], texto:'', fotos:[], responsavel:'Pedro Lima', equipe:1});
   for (const dd of S.data.diario) for (const p of dd.presentes || []) if (!S.data.apontamentos.some(a => a.funcionarioId === p.fid && a.data === dd.data)) await sv('apontamentos', {funcionarioId:p.fid, obraId:dd.obraId, data:dd.data, dias:p.dias, pago:false, diarioId:dd.id});
+  const etN = (o, n) => (S.data.etapas.find(e => e.obraId === o.id && e.nome.startsWith(n)) || {}).id || '';
+  for (const [desc, et] of [['Concreto usinado', 'Fundação'], ['Aço e ferragens', 'Estrutura'], ['Empreiteira — estrutura', 'Estrutura'], ['Tijolos e argamassa', 'Alvenaria']]) { const l = S.data.lancamentos.find(x => x.descricao.startsWith(desc)); if (l) await sv('lancamentos', {...l, etapaId:etN(o1, et)}); }
+  await sv('obras', {...achar('obras', o1.id), avancoHist:[[-95, 0], [-85, 3], [-75, 8], [-62, 15], [-50, 22], [-38, 30], [-26, 36], [-14, 41], [-6, 44]].map(([n, p]) => ({d:d(n), p}))});
+  await sv('obras', {...achar('obras', o2.id), avancoHist:[[-30, 0], [-22, 12], [-12, 22], [-4, 30]].map(([n, p]) => ({d:d(n), p}))});
+  const fLuiz = (fs_.find(f => f.nome === 'Luiz Gonzaga') || {}).id || '', fPedro = (fs_.find(f => f.nome === 'Pedro Lima') || {}).id || '';
+  for (const [nome, codigo, categoria, origem, obraId, resp, status, extra] of [['Betoneira 400 L', 'BT-01', 'Máquina', 'Próprio', o1.id, fLuiz, 'Em uso', {valor:4200}], ['Andaimes (20 peças)', 'AND-L', 'Andaime / escora', 'Locado', o1.id, fLuiz, 'Em uso', {locadora:'Loc Mais', devolucao:d(2), valor:380}],
+    ['Martelete rompedor', 'MR-02', 'Ferramenta elétrica', 'Próprio', o2.id, fPedro, 'Em uso', {valor:1900}], ['Serra circular', 'SC-01', 'Ferramenta elétrica', 'Próprio', '', '', 'Disponível', {valor:650}], ['Vibrador de concreto', 'VB-01', 'Máquina', 'Próprio', '', '', 'Manutenção', {valor:2300, obs:'Motor em conserto na Eletro Motores.'}]])
+    await sv('equipamentos', {nome, codigo, categoria, origem, obraId, responsavelId:resp, status, ...extra, historico:[{data:d(-20), obraId, responsavelId:resp, status, obs:'', por:'Usuário Demo'}]});
+  const ci = [['Cimento CP-II 50 kg', 60, 'saco'], ['Areia média', 8, 'm³'], ['Brita 1', 6, 'm³'], ['Vergalhão CA-50 10 mm', 40, 'barra']].map(([descricao, qtd, unidade]) => ({id:gid(), descricao, qtd, unidade}));
+  const pr = (a) => Object.fromEntries(ci.map((x, k) => [x.id, a[k]]));
+  await sv('cotacoes', {titulo:'Material da laje do pavimento superior', obraId:o1.id, data:d(0), status:'Aberta', itens:ci, fornecedores:[f1.id, f2.id, f3.id],
+    precos:{[f1.id]:pr([38.9, 125, 140, 56]), [f2.id]:pr([41.5, 118, 132, 51.9]), [f3.id]:pr([39.9, 130, 145, ''])}, frete:{[f1.id]:0, [f2.id]:180, [f3.id]:120}, prazos:{[f1.id]:'1 dia', [f2.id]:'3 dias', [f3.id]:'2 dias'}});
   const it = (etapa, descricao, unidade, qtd, valor) => ({etapa, descricao, unidade, qtd, valor});
   await sv('orcamentos', {numero:'ORC-' + h.slice(0, 4) + '-001', clienteId:'', clienteNome:'Roberto Almeida', clienteTel:'(88) 99654-3210', titulo:'Construção de residência térrea 110 m²', endereco:'Rua Nova, Lote 7', data:d(-3), validadeDias:15, prazo:'150 dias após o início', status:'Enviado', bdiPct:22, descontoPct:3,
     condicoes:'Entrada de 30% na assinatura do contrato e o restante em 5 parcelas mensais conforme medição.', obs:'Inclusos: material e mão de obra descritos.\nNão inclusos: projetos, taxas da prefeitura e móveis planejados.',
