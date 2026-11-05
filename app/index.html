@@ -328,7 +328,7 @@ const API = {
 };
 
 /* ---------- estado ---------- */
-const COLS = ['obras','etapas','diario','lancamentos','fornecedores','materiais','movimentos','pedidos','funcionarios','apontamentos','clientes','contratos','orcamentos','vistorias'];
+const COLS = ['obras','etapas','diario','lancamentos','fornecedores','materiais','movimentos','pedidos','funcionarios','apontamentos','clientes','contratos','orcamentos','vistorias','aditivos'];
 const S = {uid:null, email:'', perfil:null, eid:null, empresa:null, data:{}, page:'dashboard', obraId:null, tab:{}, filtro:{}};
 const PAPEIS = {admin:'Administrador', engenheiro:'Engenheiro / Mestre de obras', financeiro:'Financeiro'};
 const PERM = {
@@ -784,11 +784,11 @@ function pgCli() {
       {h:'', r:1, f:c => c.telefone ? `<a class="btn sm" target="_blank" data-stop href="${wa(c.telefone, `Olá, ${c.nome.split(' ')[0]}! Aqui é da ${S.empresa.nome}.`)}">WhatsApp</a>` : ''}], 'Nenhum cliente cadastrado.');
   else c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="contratos">+ Contrato</button></div>`
     + tabela('contratos', S.data.contratos.slice().sort((a, b) => (b.assinadoEm || '').localeCompare(a.assinadoEm || '')), [{h:'Nº', k:'numero'}, {h:'Cliente', f:x => esc(nomeDe('clientes', x.clienteId))}, {h:'Obra', f:x => esc(nomeDe('obras', x.obraId))},
-      {h:'Assinado', f:x => fdata(x.assinadoEm)}, {h:'Valor', r:1, f:x => `<b>${brl(x.valor)}</b><br><small style="color:var(--mut)">${x.parcelas || 1}x de ${brl((+x.valor || 0) / (+x.parcelas || 1))}</small>`},
+      {h:'Assinado', f:x => fdata(x.assinadoEm)}, {h:'Valor', r:1, f:x => { const ad = totalAdAssinados(x.id); return `<b>${brl((+x.valor || 0) + ad)}</b><br><small style="color:var(--mut)">${ad ? `${brl(x.valor)} ${ad < 0 ? '−' : '+'} ${brl(Math.abs(ad))} aditivos` : `${x.parcelas || 1}x de ${brl((+x.valor || 0) / (+x.parcelas || 1))}`}</small>`; }},
       {h:'Recebido', r:1, f:x => { const r = S.data.lancamentos.filter(l => l.contratoId === x.id && l.pago).reduce((s, l) => s + +l.valor, 0); return brl(r); }},
       {h:'Assinatura', f:x => badgeCt(x)},
-      {h:'', r:1, f:x => `<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-act="docCt" data-a="${x.id}">Ver</button>${x.assinatura ? '' : `<button class="btn sm pri" data-act="menuCt" data-a="${x.id}">${x.assinaturaToken ? 'Link de assinatura' : 'Assinar'}</button>`}${x.parcelasGeradas ? '' : (pode('financeiro') ? `<button class="btn sm" data-act="gerarParcelas" data-a="${x.id}">Parcelas</button>` : '')}</div>`}], 'Nenhum contrato. Contratos também são criados ao aprovar um orçamento.');
-  if (at !== 'cli' && S.data.contratos.some(x => x.assinaturaToken && !x.assinatura)) setTimeout(checarAssinaturas, 50);
+      {h:'', r:1, f:x => `<div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-act="docCt" data-a="${x.id}">Ver</button><button class="btn sm" data-act="aditivos" data-a="${x.id}">Aditivos${adsDe(x.id).length ? ` (${adsDe(x.id).length})` : ''}</button>${x.assinatura ? '' : `<button class="btn sm pri" data-act="menuCt" data-a="${x.id}">${x.assinaturaToken ? 'Link de assinatura' : 'Assinar'}</button>`}${x.parcelasGeradas ? '' : (pode('financeiro') ? `<button class="btn sm" data-act="gerarParcelas" data-a="${x.id}">Parcelas</button>` : '')}</div>`}], 'Nenhum contrato. Contratos também são criados ao aprovar um orçamento.');
+  if (at !== 'cli' && [...S.data.contratos, ...S.data.aditivos].some(x => x.assinaturaToken && !x.assinatura)) setTimeout(checarAssinaturas, 50);
   return topo('Clientes', 'Cadastro de clientes e contratos') + tabs('cli', [['cli','Clientes'], ['con','Contratos']]) + c;
 }
 
@@ -1084,7 +1084,7 @@ function preencherContrato(ct) {
 /* Documento do contrato (usado pela construtora e pela página pública de assinatura) */
 function htmlContratoCorpo(d, comFoto) {
   const linhas = esc(d.texto).split('\n').map(l => { const t = l.trim();
-    if (/^(CONTRATO DE|TERMO DE|RELATÓRIO DE)/.test(t)) return `<p class="tit">${l}</p>`;
+    if (/^(CONTRATO DE|TERMO DE|TERMO ADITIVO|RELATÓRIO DE)/.test(t)) return `<p class="tit">${l}</p>`;
     if (/^CLÁUSULA/.test(t)) return `<p class="cl">${l}</p>`;
     if (/^(CONTRATADA|CONTRATANTE):/.test(t)) return `<p>${l.replace(/^(\s*)(CONTRATADA:|CONTRATANTE:)/, '$1<b>$2</b>')}</p>`;
     return `<p>${l || '&nbsp;'}</p>`; }).join('');
@@ -1194,6 +1194,9 @@ async function checarAssinaturas() {
   }
   for (const vi of S.data.vistorias.filter(x => x.assinaturaToken && !x.assinatura)) {
     try { const d = await API.getAssinatura(vi.assinaturaToken); if (d && d.status === 'assinado' && d.assinatura) { const x = await salvar('vistorias', {...achar('vistorias', vi.id), assinatura:d.assinatura}); await aposAssinarVistoria(x); mudou = true; } } catch (e) { console.warn(e); }
+  }
+  for (const ad of S.data.aditivos.filter(x => x.assinaturaToken && !x.assinatura)) {
+    try { const d = await API.getAssinatura(ad.assinaturaToken); if (d && d.status === 'assinado' && d.assinatura) { const x = await salvar('aditivos', {...achar('aditivos', ad.id), assinatura:d.assinatura}); await aposAssinarAditivo(x); mudou = true; } } catch (e) { console.warn(e); }
   }
   if (mudou) { toast('Documento assinado pelo cliente!'); if (!$('#ov')) render(); }
 }
@@ -1440,6 +1443,132 @@ function abaVistorias(o) {
     : '<div class="vazio">Nenhuma vistoria ainda. Use "+ Entrega da obra" para fazer o checklist final e o termo de entrega.</div>');
 }
 
+/* ===================== ADITIVOS DE CONTRATO ===================== */
+const TERMO_ADITIVO = `TERMO ADITIVO Nº {{N}} AO CONTRATO Nº {{CONTRATO}}
+
+CONTRATADA: {{EMPRESA}}, CNPJ {{CNPJ_EMPRESA}}.
+CONTRATANTE: {{CLIENTE}}, CPF/CNPJ {{CPF_CLIENTE}}.
+
+As partes acima, que firmaram o contrato nº {{CONTRATO}} referente à obra "{{OBRA}}", resolvem aditá-lo conforme as cláusulas abaixo.
+
+CLÁUSULA 1ª – DO OBJETO DO ADITIVO
+{{DESCRICAO}}
+
+CLÁUSULA 2ª – DO VALOR
+{{VALOR_TXT}}
+
+CLÁUSULA 3ª – DO PRAZO
+{{PRAZO_TXT}}
+
+CLÁUSULA 4ª – DA RATIFICAÇÃO
+Ficam ratificadas todas as demais cláusulas e condições do contrato original que não foram alteradas por este termo.
+
+{{CIDADE}}, {{DATA}}.`;
+const adsDe = cid => S.data.aditivos.filter(a => a.contratoId === cid).sort((a, b) => a.n - b.n);
+const sinalAd = a => a.tipo === 'Supressão' ? -1 : 1;
+const totalAdAssinados = (cid, ateN = 1e9) => adsDe(cid).filter(a => a.assinatura && a.n < ateN).reduce((s, a) => s + sinalAd(a) * (+a.valor || 0), 0);
+const statusAd = a => a.assinatura ? 'Assinado' : a.assinaturaToken ? 'Aguardando assinatura' : 'Não assinado';
+const badgeAd = a => { const s = statusAd(a); return `<span class="badge ${s === 'Assinado' ? 'b-ok' : s === 'Não assinado' ? 'b-mut' : 'b-warn'}">${s}</span>`; };
+function textoAditivo(a) {
+  const E = S.empresa, ct = achar('contratos', a.contratoId) || {}, o = achar('obras', ct.obraId) || {}, c = achar('clientes', ct.clienteId) || {};
+  const ant = (+ct.valor || 0) + totalAdAssinados(ct.id, a.n), novo = ant + sinalAd(a) * (+a.valor || 0);
+  const vt = (+a.valor || 0) === 0 ? 'Este aditivo não altera o valor do contrato.'
+    : `Fica ${a.tipo === 'Supressão' ? 'reduzida do' : 'acrescida ao'} valor do contrato a quantia de ${brl(a.valor)}, passando o valor total de ${brl(ant)} para ${brl(novo)}.${a.tipo === 'Supressão' ? '' : ` O valor deste aditivo será pago da seguinte forma: ${a.pagamento || 'conforme combinado entre as partes'}.`}`;
+  const pt = +a.prazoDias > 0 ? `O prazo de execução da obra fica prorrogado em ${+a.prazoDias} dia(s).` : 'O prazo de execução da obra permanece inalterado.';
+  const val = {N:String(a.n), CONTRATO:ct.numero || '', EMPRESA:E.nome, CNPJ_EMPRESA:E.cnpj, CLIENTE:c.nome, CPF_CLIENTE:c.cpfCnpj, OBRA:o.nome || ct.obs, DESCRICAO:a.descricao, VALOR_TXT:vt, PRAZO_TXT:pt, CIDADE:E.cidade, DATA:dataExtenso(a.data)};
+  return TERMO_ADITIVO.replace(/\{\{([A-Z_]+)\}\}/g, (m, k) => k in val ? (val[k] || '__________') : m);
+}
+function dadosDocAd(a) {
+  const ct = achar('contratos', a.contratoId) || {}, c = achar('clientes', ct.clienteId) || {};
+  return {texto:a.textoFinal || textoAditivo(a), empresaNome:S.empresa.nome, logo:S.empresa.logo || '', assinaturaEmpresa:a.assinaturaEmpresa || S.empresa.assinatura || '', clienteNome:c.nome,
+    numero:`Aditivo ${a.n} ao contrato ${ct.numero || ''}`, assinatura:a.assinatura || null, docNome:'termo aditivo'};
+}
+function abrirDocGen(titulo, sub, corpo) {
+  const w = window.open('', '_blank'); if (!w) return toast('Libere as janelas pop-up do navegador.');
+  w.document.open(); w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(titulo)}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"><style>body{margin:0;background:#e9ebef;-webkit-print-color-adjust:exact;print-color-adjust:exact}${CSS_CONTRATO}${CSS_CK}
+  .bar{position:sticky;top:0;background:#14181f;color:#fff;padding:10px 16px;display:flex;gap:8px;align-items:center;font:600 14px Inter,sans-serif;z-index:2}.bar b{flex:1}.bar button{border:0;border-radius:8px;padding:9px 14px;font:600 13px Inter,sans-serif;cursor:pointer;background:#fff}.bar .p{background:#f08a24;color:#fff}</style></head>
+  <body><div class="bar noprint"><b>${esc(sub)}</b><button class="p" onclick="print()">Salvar PDF / Imprimir</button><button onclick="close()">Fechar</button></div>${corpo}</body></html>`);
+  w.document.close();
+}
+function listaAditivos(cid) {
+  const ct = achar('contratos', cid), ads = adsDe(cid), tot = totalAdAssinados(cid);
+  modal(`<h3>Aditivos — contrato ${esc(ct.numero || '')}</h3>
+    <div class="totbox" style="justify-content:flex-start"><div><span>Valor original</span><b>${brl(ct.valor)}</b></div><div><span>Aditivos assinados</span><b style="color:${tot < 0 ? 'var(--bad)' : 'var(--ok)'}">${tot < 0 ? '−' : '+'} ${brl(Math.abs(tot))}</b></div><div class="tt"><span>Valor atualizado</span><b>${brl((+ct.valor || 0) + tot)}</b></div></div>
+    ${ads.length ? `<div class="tw"><table><thead><tr><th>Nº</th><th>Serviço</th><th class="r">Valor</th><th>Prazo</th><th>Situação</th><th></th></tr></thead><tbody>${ads.map(a => `<tr style="cursor:default"><td><b>${a.n}</b><br><small style="color:var(--mut)">${fdata(a.data)}</small></td>
+      <td><small style="color:var(--mut)">${esc(a.tipo)}</small><br>${esc((a.descricao || '').slice(0, 90))}${(a.descricao || '').length > 90 ? '…' : ''}</td><td class="r"><b style="white-space:nowrap;color:${a.tipo === 'Supressão' ? 'var(--bad)' : 'inherit'}">${a.tipo === 'Supressão' ? '−' : '+'} ${brl(a.valor)}</b></td>
+      <td style="white-space:nowrap">${+a.prazoDias ? '+' + a.prazoDias + ' dias' : '—'}</td><td>${badgeAd(a)}</td>
+      <td class="r"><div class="row" style="justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-act="docAd" data-a="${a.id}">Ver</button>${a.assinatura ? '' : `${a.assinaturaToken ? '' : `<button class="btn sm" data-act="editAd" data-a="${a.id}">Editar</button>`}<button class="btn sm pri" data-act="menuAd" data-a="${a.id}">${a.assinaturaToken ? 'Link' : 'Assinar'}</button>`}</div></td></tr>`).join('')}</tbody></table></div>`
+    : '<div class="vazio">Nenhum aditivo. Use quando o cliente pedir um serviço extra, uma mudança de projeto ou a retirada de algum serviço.</div>'}
+    <div class="mact"><span style="flex:1"></span><button class="btn" onclick="fecharModal()">Fechar</button><button class="btn pri" data-act="novoAd" data-a="${cid}">+ Novo aditivo</button></div>`, 'wide');
+}
+function editorAditivo(rec) {
+  const a = {...rec}, ct = achar('contratos', a.contratoId);
+  modal(`<h3>${a.id ? 'Editar' : 'Novo'} aditivo nº ${a.n} — contrato ${esc(ct.numero || '')}</h3>
+    <div class="f2"><div class="fld"><label>Tipo</label><select id="d_tipo"><option value="Acréscimo" ${a.tipo !== 'Supressão' ? 'selected' : ''}>Acréscimo (serviço extra / mudança)</option><option value="Supressão" ${a.tipo === 'Supressão' ? 'selected' : ''}>Supressão (retirada de serviço)</option></select></div>
+    <div class="fld"><label>Data</label><input type="date" id="d_data" value="${esc(a.data)}"></div>
+    <div class="fld" style="grid-column:1/-1"><label>O que está sendo alterado *</label><textarea id="d_desc" placeholder="Ex.: Construção de área gourmet de 12 m² com churrasqueira, bancada em granito e ponto de água, conforme pedido do cliente.">${esc(a.descricao)}</textarea></div>
+    <div class="fld"><label>Valor do aditivo (R$)</label><input type="number" step="0.01" min="0" id="d_valor" value="${esc(a.valor)}"></div>
+    <div class="fld"><label>Dias a mais no prazo da obra</label><input type="number" min="0" id="d_prazo" value="${esc(a.prazoDias)}" placeholder="0"></div>
+    <div class="fld" id="d_pgw" style="grid-column:1/-1"><label>Forma de pagamento do aditivo</label><input id="d_pg" value="${esc(a.pagamento)}" placeholder="Ex.: à vista na assinatura, ou junto com a próxima parcela"></div>
+    <div class="fld" id="d_vw"><label>Vencimento do pagamento</label><input type="date" id="d_venc" value="${esc(a.vencimento)}"></div>
+    <div class="fld" id="d_lw" style="align-self:end"><label class="chk"><input type="checkbox" id="d_lanc" ${a.lancar !== false ? 'checked' : ''}> Lançar no financeiro quando assinar</label></div></div>
+    <div class="mact">${a.id ? '<button class="btn danger" id="d_del">Excluir</button>' : ''}<span style="flex:1"></span><button class="btn" data-act="aditivos" data-a="${a.contratoId}">Voltar</button><button class="btn pri" id="d_ok">Salvar</button></div>`, 'wide');
+  const tipoVis = () => { const sup = $('#d_tipo').value === 'Supressão'; ['#d_pgw', '#d_vw', '#d_lw'].forEach(s => { $(s).style.display = sup ? 'none' : ''; }); };
+  $('#d_tipo').onchange = tipoVis; tipoVis();
+  $('#d_ok').onclick = async () => {
+    Object.assign(a, {tipo:$('#d_tipo').value, data:$('#d_data').value || hoje(), descricao:$('#d_desc').value.trim(), valor:+$('#d_valor').value || 0, prazoDias:+$('#d_prazo').value || 0,
+      pagamento:$('#d_pg').value.trim(), vencimento:$('#d_venc').value || hoje(), lancar:$('#d_lanc').checked});
+    if (!a.descricao) return toast('Descreva o que está sendo alterado.');
+    await salvar('aditivos', a); toast('Aditivo salvo'); listaAditivos(a.contratoId); render();
+  };
+  if ($('#d_del')) $('#d_del').onclick = async () => { if (!confirm('Excluir este aditivo?')) return; await excluir('aditivos', a.id); listaAditivos(a.contratoId); render(); };
+}
+async function aposAssinarAditivo(a) {
+  const ct = achar('contratos', a.contratoId) || {}, o = achar('obras', ct.obraId);
+  if (a.tipo !== 'Supressão' && a.lancar !== false && +a.valor > 0 && !a.lancamentoId) {
+    const l = await salvar('lancamentos', {tipo:'Receber', categoria:'Medição / Parcela do cliente', descricao:`Aditivo ${a.n} — contrato ${ct.numero || ''} (${nomeDe('clientes', ct.clienteId)})`, obraId:ct.obraId || '', valor:+a.valor, vencimento:a.vencimento || hoje(), pago:false, contratoId:ct.id, aditivoId:a.id});
+    a = await salvar('aditivos', {...achar('aditivos', a.id), lancamentoId:l.id});
+  }
+  if (o && +a.prazoDias > 0 && o.previsao && !a.prazoAplicado) {
+    await salvar('obras', {...o, previsao:addDias(o.previsao, +a.prazoDias)});
+    await salvar('aditivos', {...achar('aditivos', a.id), prazoAplicado:true}); syncPortal(o.id);
+  }
+}
+function assinarAditivoAqui(id) {
+  const a = achar('aditivos', id), ct = achar('contratos', a.contratoId) || {}, c = achar('clientes', ct.clienteId) || {};
+  const texto = textoAditivo(a); if (!avisoFaltando(texto)) return;
+  modal(`<h3>Assinatura — aditivo nº ${a.n}</h3><div class="ctprev">${esc(texto)}</div>
+    <div class="f2"><div class="fld"><label>Nome completo de quem assina</label><input id="s_nome" value="${esc(c.nome)}"></div><div class="fld"><label>CPF</label><input id="s_cpf" value="${esc(c.cpfCnpj)}" inputmode="numeric"></div></div>
+    ${HTML_PAD('s_pad')}<label class="chk" style="margin-top:10px"><input type="checkbox" id="s_ok"> Li e concordo com este termo aditivo.</label>
+    <div class="mact"><span style="flex:1"></span><button class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri" id="s_go">Confirmar assinatura</button></div>`, 'wide');
+  const pad = padAssinatura($('#s_pad')); $('#s_pad_limpar').onclick = pad.limpar;
+  $('#s_go').onclick = async () => {
+    const nome = $('#s_nome').value.trim(), cpf = $('#s_cpf').value.trim();
+    if (nome.length < 5) return toast('Digite o nome completo.'); if (!cpfOk(cpf)) return toast('Digite um CPF/CNPJ válido.');
+    if (pad.vazio()) return toast('Faça a assinatura no quadro.'); if (!$('#s_ok').checked) return toast('Marque a confirmação.');
+    $('#s_go').disabled = true;
+    const x = await salvar('aditivos', {...a, textoFinal:texto, assinaturaEmpresa:S.empresa.assinatura || '', assinatura:{img:pad.png(), nome, cpf, em:new Date().toISOString(), modo:'presencial', dispositivo:navigator.userAgent.slice(0, 160)}});
+    await aposAssinarAditivo(x); render(); listaAditivos(a.contratoId); toast('Aditivo assinado!');
+  };
+}
+async function enviarAditivo(id) {
+  const a = achar('aditivos', id), ct = achar('contratos', a.contratoId) || {}, c = achar('clientes', ct.clienteId) || {};
+  let tk = a.assinaturaToken;
+  if (!tk) {
+    const texto = textoAditivo(a); if (!avisoFaltando(texto)) return;
+    tk = gid() + gid();
+    await API.setAssinatura(tk, {empresaId:S.eid, empresaNome:S.empresa.nome, empresaTel:S.empresa.telefone || '', logo:S.empresa.logo || '', assinaturaEmpresa:S.empresa.assinatura || '',
+      numero:`Aditivo ${a.n} ao contrato ${ct.numero || ''}`, clienteNome:c.nome || '', texto, docNome:'termo aditivo', status:'pendente', criadoEm:Date.now()});
+    await salvar('aditivos', {...a, assinaturaToken:tk, textoFinal:texto, assinaturaEmpresa:S.empresa.assinatura || ''}); render();
+  }
+  const url = location.origin + location.pathname + '?assinar=' + tk;
+  modal(`<h3>Enviar aditivo nº ${a.n} para assinatura</h3><p style="color:var(--mut);margin-top:0">O cliente abre o link, lê o aditivo e assina com o dedo. Ao assinar, o valor entra no financeiro e o prazo da obra é ajustado.</p>
+    <div class="fld"><input value="${esc(url)}" readonly onclick="this.select()"></div>${USE_FB ? '' : '<p class="demo">Modo demonstração: o link só abre neste navegador.</p>'}
+    <div class="mact"><button class="btn" data-act="aditivos" data-a="${a.contratoId}">Voltar</button><span style="flex:1"></span><button class="btn" onclick="navigator.clipboard.writeText('${esc(url)}');toast('Link copiado')">Copiar</button>
+    ${c.telefone ? `<a class="btn pri" target="_blank" href="${wa(c.telefone, `Olá, ${(c.nome || '').split(' ')[0]}! Segue o aditivo nº ${a.n} do seu contrato com a ${S.empresa.nome} (${a.tipo === 'Supressão' ? 'redução' : 'acréscimo'} de ${brl(a.valor)}) para você ler e assinar pelo celular: ${url}`)}">Enviar no WhatsApp</a>` : ''}</div>`);
+}
+
 /* ===================== AÇÕES ===================== */
 const ACT = {
   nav:a => { S.page = a; S.obraId = null; window.scrollTo(0, 0); render(); },
@@ -1530,6 +1659,17 @@ const ACT = {
   exemplo:async () => { if (!confirm('Carregar obras, clientes, funcionários e lançamentos de exemplo?')) return; toast('Carregando exemplo...'); await dadosExemplo(); S.page = 'dashboard'; render(); toast('Dados de exemplo carregados'); },
   admRenovar:async eid => { const e = await API.getEmpresa(eid); const base = Math.max(Date.now(), e.venceTs || 0); await API.setEmpresa(eid, {status:'ativo', venceTs:base + 30 * 864e5}); if (eid === S.eid) S.empresa = await API.getEmpresa(eid); render(); toast('Renovada por 30 dias'); },
   admStatus:async (eid, st) => { if (st === 'bloqueado' && !confirm('Bloquear o acesso desta construtora?')) return; const e = await API.getEmpresa(eid); const x = {status:st}; if (st === 'ativo' && (e.venceTs || 0) < Date.now()) x.venceTs = Date.now() + 3 * 864e5; await API.setEmpresa(eid, x); render(); toast(st === 'ativo' ? 'Liberada' : 'Bloqueada'); },
+  aditivos:cid => listaAditivos(cid),
+  novoAd:cid => { const ct = achar('contratos', cid); if (!ct.assinatura && !confirm('O contrato original ainda não foi assinado. Criar o aditivo mesmo assim?')) return; editorAditivo({contratoId:cid, n:(adsDe(cid).reduce((m, a) => Math.max(m, a.n), 0)) + 1, tipo:'Acréscimo', data:hoje(), vencimento:hoje(), lancar:true}); },
+  editAd:id => editorAditivo(achar('aditivos', id)),
+  docAd:id => { const a = achar('aditivos', id); abrirDocGen(`Aditivo ${a.n} - contrato ${(achar('contratos', a.contratoId) || {}).numero || ''}`, `Aditivo nº ${a.n} · ${statusAd(a)}`, htmlContratoCorpo(dadosDocAd(a))); },
+  menuAd:id => { const a = achar('aditivos', id); if (a.assinaturaToken) return enviarAditivo(id);
+    modal(`<h3>Assinar aditivo nº ${a.n}</h3><div class="opcs">
+      <button class="opc" data-act="enviarAd" data-a="${id}"><b>📲 Enviar link para o cliente</b><span>Ele lê e assina pelo celular. A assinatura chega aqui sozinha.</span></button>
+      <button class="opc" data-act="assinarAd" data-a="${id}"><b>✍️ Assinar aqui agora</b><span>O cliente está com você e assina com o dedo neste aparelho.</span></button></div>
+      <div class="mact"><button class="btn" data-act="aditivos" data-a="${a.contratoId}">Voltar</button></div>`); },
+  enviarAd:id => enviarAditivo(id),
+  assinarAd:id => assinarAditivoAqui(id),
   novaVist:(oid, tipo) => novaVistoria(oid, tipo),
   editVist:id => editorVistoria(achar('vistorias', id)),
   docVist:id => abrirDocVistoria(achar('vistorias', id)),
