@@ -36,6 +36,11 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,sy
 button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--pri2)}
 .hide{display:none!important}
+.bnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:40;grid-template-columns:repeat(5,1fr);background:var(--card);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 18px rgba(0,0,0,.06)}
+.bnav button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--mut);padding:4px 2px;cursor:pointer}
+.bnav button svg{width:22px;height:22px}.bnav button.on{color:var(--pri2)}
+.side .msair{display:none;border:1px solid #2c3442;background:none;color:var(--sideInk);border-radius:8px;padding:6px 10px;font-size:12.5px;cursor:pointer}
+.mais{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.mais button{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:600;font-size:12.5px;cursor:pointer;color:var(--ink)}.mais button svg{width:24px;height:24px;color:var(--pri2)}.mais button.on{border-color:var(--pri);background:var(--priSoft)}
 .boot{min-height:100vh;display:grid;place-items:center;color:var(--mut);text-align:center}
 .boot .logo{margin:0 auto 18px;width:46px;height:46px}.boot .logo svg{width:26px;height:26px}
 .spin{width:26px;height:26px;margin:0 auto 10px;border:3px solid var(--line);border-top-color:var(--pri);border-radius:50%;animation:gira .8s linear infinite}
@@ -197,11 +202,30 @@ table.itens tbody tr{cursor:default}table.itens tbody tr:hover{background:none}
   .app{flex-direction:column}
   .side{width:100%;height:auto;position:sticky;top:0;z-index:20}
   .brand{padding:12px 16px}
-  .nav{flex-direction:row;overflow-x:auto;padding:0 8px 8px}
-  .nav button{width:auto;white-space:nowrap;padding:8px 10px}
-  .nav button.on{box-shadow:inset 0 -3px 0 var(--pri)}
+  .nav{display:none}
+  .side .brand{justify-content:flex-start}
+  .side .msair{display:inline-flex;margin-left:auto}
   .sidefoot{display:none}
-  .main{padding:18px 16px 60px}
+  .main{padding:16px 16px 96px}
+  .bnav{display:grid}
+  .kpi b{font-size:clamp(14px,4.4vw,22px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kpi{padding:13px}
+  .kpi span{font-size:11px}
+  .tabs{flex-wrap:wrap;gap:2px 0}.tabs button{padding:9px 11px}
+  .top h1{font-size:20px}
+  .tw:has(table.cards){border:0;background:transparent;overflow:visible}
+  table.cards,table.cards tbody{display:block}
+  table.cards thead{display:none}
+  table.cards tr{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;box-shadow:var(--sh)}
+  table.cards td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;padding:5px 0;text-align:right}
+  table.cards td::before{content:attr(data-label);color:var(--mut);font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:left;flex:none}
+  table.cards td:first-child{display:block;text-align:left;font-size:15px;padding-bottom:7px;margin-bottom:4px;border-bottom:1px solid var(--line)}
+  table.cards td:first-child::before{display:none}
+  table.cards td[data-label=""]::before{display:none}
+  table.cards td[data-label=""]{justify-content:flex-end}
+  table.cards td:empty{display:none}
+  table.cards td .row{justify-content:flex-end!important;flex-wrap:wrap!important}
+  table.cards td .pct{min-width:150px}
   .grid2,.f2{grid-template-columns:1fr}
   .auth{grid-template-columns:1fr}.authL{padding:32px 22px}.authL h1{font-size:28px}.authL ul{display:none}
   .gname{width:90px}.gfoot{padding-left:100px}
@@ -260,6 +284,7 @@ const IC = {
   cli:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>',
   cfg:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   orc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
+  sair:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
   adm:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
   logo:'<path d="M2 20h20M4 20V10l8-6 8 6v10"/><path d="M10 20v-5h4v5"/>'
 };
@@ -605,7 +630,7 @@ const linkPortal = o => location.origin + location.pathname + '?portal=' + o.por
 /* ---------- tabela genérica ---------- */
 function tabela(col, rows, cols, vazio) {
   if (!rows.length) return `<div class="vazio">${vazio || 'Nada cadastrado ainda.'}</div>`;
-  return `<div class="tw"><table><thead><tr>${cols.map(c => `<th class="${c.r ? 'r' : ''}">${c.h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr data-col="${col}" data-id="${r.id}">${cols.map(c => `<td class="${c.r ? 'r' : ''}">${c.f ? c.f(r) : esc(r[c.k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  return `<div class="tw"><table class="cards"><thead><tr>${cols.map(c => `<th class="${c.r ? 'r' : ''}">${c.h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr data-col="${col}" data-id="${r.id}">${cols.map(c => { const v = c.f ? c.f(r) : esc(r[c.k]); return `<td class="${c.r ? 'r' : ''}" data-label="${esc(String(c.h).replace(/<[^>]*>/g, ''))}">${v == null || v === '' ? '' : v}</td>`; }).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 const tabs = (chave, itens) => { const at = S.tab[chave] || itens[0][0]; return `<div class="tabs">${itens.map(([k, l]) => `<button class="${k === at ? 'on' : ''}" data-act="tab" data-a="${chave}" data-b="${k}">${l}</button>`).join('')}</div>`; };
 const tabAt = (chave, def) => S.tab[chave] || def;
@@ -618,13 +643,20 @@ const PAGES = [
 function montarApp() {
   const navs = PAGES.filter(p => pode(p[0])).map(p => `<button data-act="nav" data-a="${p[0]}">${ico(p[2])}<span>${p[1]}</span></button>`).join('')
     + (isAdmin() ? `<button data-act="nav" data-a="admin">${ico('adm')}<span>Assinantes</span></button>` : '');
-  $('#root').innerHTML = `<div class="app"><aside class="side"><div class="brand"><div class="logo">${ico('logo')}</div><div>Gestor de Obras<small>${esc(S.empresa ? S.empresa.nome : 'Administração')}</small></div></div>
+  const disp = [...PAGES.filter(p => pode(p[0])), ...(isAdmin() ? [['admin','Assinantes','adm']] : [])];
+  const pref = ['dashboard','obras','financeiro','orcamentos','materiais','equipe','admin'];
+  const prin = pref.map(k => disp.find(p => p[0] === k)).filter(Boolean).slice(0, 4);
+  const bnav = prin.map(p => `<button data-act="nav" data-a="${p[0]}">${ico(p[2])}<span>${p[1]}</span></button>`).join('') + `<button data-act="maisMenu" data-a="__mais">${ico('dash')}<span>Mais</span></button>`;
+  BNAV_PRIN = prin.map(p => p[0]); MAIS_LIST = disp;
+  $('#root').innerHTML = `<div class="app"><aside class="side"><div class="brand"><div class="logo">${ico('logo')}</div><div>Gestor de Obras<small>${esc(S.empresa ? S.empresa.nome : 'Administração')}</small></div><button class="msair" data-act="sair">Sair</button></div>
     <nav class="nav">${navs}</nav><div class="sidefoot"><b>${esc(S.perfil ? S.perfil.nome : S.email)}</b>${esc(S.perfil ? PAPEIS[S.perfil.papel] : 'Administrador do sistema')}<button data-act="sair">Sair</button></div></aside>
-    <main class="main" id="main"></main></div>`;
+    <main class="main" id="main"></main></div><nav class="bnav">${bnav}</nav>`;
   render();
 }
+let BNAV_PRIN = [], MAIS_LIST = [];
 function render() {
-  document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.a === S.page));
+  const pg = S.page === 'obra' ? 'obras' : S.page;
+  document.querySelectorAll('.nav button, .bnav button').forEach(b => b.classList.toggle('on', b.dataset.a === pg || (b.dataset.a === '__mais' && !BNAV_PRIN.includes(pg))));
   const fn = {dashboard:pgDash, obras:pgObras, obra:pgObra, financeiro:pgFin, materiais:pgMat, equipe:pgEquipe, clientes:pgCli, orcamentos:pgOrc, config:pgCfg, admin:pgAdmin}[S.page] || pgDash;
   const m = $('#main'); if (!m) return;
   const r = fn(); if (r && r.then) r.then(h => { m.innerHTML = aviso() + h; ligarCurva(); }); else { m.innerHTML = aviso() + r; ligarCurva(); }
@@ -2084,7 +2116,9 @@ function gerarRelatorio(oid, mes, interna, nomeMesTxt) {
 
 /* ===================== AÇÕES ===================== */
 const ACT = {
-  nav:a => { S.page = a; S.obraId = null; window.scrollTo(0, 0); render(); },
+  nav:a => { fecharModal(); S.page = a; S.obraId = null; window.scrollTo(0, 0); render(); },
+  maisMenu:() => modal(`<h3>Menu</h3><div class="mais">${MAIS_LIST.map(p => `<button class="${p[0] === S.page ? 'on' : ''}" data-act="nav" data-a="${p[0]}">${ico(p[2])}${p[1]}</button>`).join('')}<button data-act="sair">${ico('sair')}Sair</button></div>
+    <p style="color:var(--mut);font-size:12.5px;margin:14px 0 0;text-align:center">${esc(S.perfil ? S.perfil.nome : S.email)} · ${esc(S.perfil ? PAPEIS[S.perfil.papel] : 'Administrador')}</p>`),
   obra:a => { S.page = 'obra'; S.obraId = a; S.tab.obra = 'etapas'; window.scrollTo(0, 0); render(); },
   tab:(a, b) => { S.tab[a] = b; render(); },
   novo:(col, obraId) => {
