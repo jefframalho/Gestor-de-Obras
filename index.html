@@ -7,9 +7,8 @@
 <meta name="description" content="Gestor de Obras — sistema de gestão para construtoras: obras, cronograma, diário de obra, financeiro, materiais, equipe e clientes.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<link rel="preconnect" href="https://www.gstatic.com">
+<link rel="preconnect" href="https://firestore.googleapis.com">
 <style>
 :root{
   --bg:#f4f5f7;--card:#ffffff;--ink:#16191f;--mut:#6b7280;--line:#e5e7eb;--soft:#f9fafb;
@@ -27,6 +26,10 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,sy
 button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--pri2)}
 .hide{display:none!important}
+.boot{min-height:100vh;display:grid;place-items:center;color:var(--mut);text-align:center}
+.boot .logo{margin:0 auto 18px;width:46px;height:46px}.boot .logo svg{width:26px;height:26px}
+.spin{width:26px;height:26px;margin:0 auto 10px;border:3px solid var(--line);border-top-color:var(--pri);border-radius:50%;animation:gira .8s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
 /* layout */
 .app{display:flex;min-height:100vh}
 .side{width:236px;background:var(--side);color:var(--sideInk);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex-shrink:0}
@@ -165,7 +168,10 @@ tbody tr:hover{background:var(--soft)}
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="root"><div class="boot"><div><div class="logo"><svg viewBox="0 0 24 24"><path d="M2 20h20M4 20V10l8-6 8 6v10"/><path d="M10 20v-5h4v5"/></svg></div><div class="spin"></div><span>Carregando...</span></div></div></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 /* ===================== CONFIGURAÇÃO ===================== */
 // Cole aqui a configuração do seu projeto Firebase (Console > Configurações do projeto > Seus apps > Web).
@@ -186,7 +192,7 @@ const WHATS_SUPORTE = "5583921418988"; // WhatsApp para pagamento/suporte
 
 const USE_FB = !!FIREBASE_CONFIG.apiKey;
 let auth = null, fs = null;
-if (USE_FB) { firebase.initializeApp(FIREBASE_CONFIG); auth = firebase.auth(); fs = firebase.firestore(); }
+if (USE_FB) { firebase.initializeApp(FIREBASE_CONFIG); auth = firebase.auth(); fs = firebase.firestore(); fs.enablePersistence({synchronizeTabs:true}).catch(() => {}); }
 
 /* ---------- utilidades ---------- */
 const $ = s => document.querySelector(s);
@@ -278,9 +284,13 @@ const API = {
     if (USE_FB) return (await fs.collection('empresas').get()).docs.map(x => fixEmp({id:x.id, ...x.data()}));
     return Object.entries(Demo.get().empresas).map(([id, e]) => ({id, ...e}));
   },
-  async list(eid, col) {
-    if (USE_FB) return (await fs.collection(`empresas/${eid}/${col}`).get()).docs.map(x => ({...x.data(), id:x.id}));
+  async list(eid, col, src) {
+    if (USE_FB) return (await fs.collection(`empresas/${eid}/${col}`).get(src ? {source:src} : undefined)).docs.map(x => ({...x.data(), id:x.id}));
     const d = Demo.get(); return Object.values((d.dados[eid] || {})[col] || {});
+  },
+  async getDoc(eid, col, id) {
+    if (USE_FB) { const s = await fs.doc(`empresas/${eid}/${col}/${id}`).get(); return s.exists ? s.data() : null; }
+    const d = Demo.get(); return ((d.dados[eid] || {})[col] || {})[id] || null;
   },
   async put(eid, col, id, obj) {
     if (USE_FB) return fs.doc(`empresas/${eid}/${col}/${id}`).set(obj);
@@ -307,7 +317,22 @@ const isAdmin = () => ADMIN_EMAILS.map(x => x.toLowerCase()).includes((S.email |
 const pode = p => S.perfil && (PERM[S.perfil.papel] || PERM.admin).includes(p);
 const bloqueada = e => !e || e.status === 'bloqueado' || (e.venceTs || 0) < Date.now();
 
-async function carregarTudo() { await Promise.all(COLS.map(async c => { S.data[c] = await API.list(S.eid, c); })); }
+async function carregarTudo() {
+  // 1º abre com o que já está salvo no aparelho (instantâneo) e atualiza do servidor em segundo plano
+  if (USE_FB) {
+    try {
+      const cache = await Promise.all(COLS.map(c => API.list(S.eid, c, 'cache')));
+      if (cache.some(a => a.length)) { COLS.forEach((c, i) => { S.data[c] = cache[i]; }); setTimeout(atualizarDoServidor, 0); return; }
+    } catch (e) {}
+  }
+  const r = await Promise.all(COLS.map(c => API.list(S.eid, c)));
+  COLS.forEach((c, i) => { S.data[c] = r[i]; });
+}
+async function atualizarDoServidor() {
+  try { const r = await Promise.all(COLS.map(c => API.list(S.eid, c, 'server'))); COLS.forEach((c, i) => { S.data[c] = r[i]; }); if (!$('#ov') && $('#main')) render(); }
+  catch (e) { console.warn('Sem conexão, usando dados do aparelho', e); }
+}
+const carregando = (msg = 'Carregando...') => { $('#root').innerHTML = `<div class="boot"><div><div class="spin"></div><span>${msg}</span></div></div>`; };
 async function salvar(col, obj) {
   obj.id = obj.id || gid(); obj.atualizadoEm = Date.now(); if (!obj.criadoEm) obj.criadoEm = Date.now();
   await API.put(S.eid, col, obj.id, obj);
@@ -413,7 +438,7 @@ function campo(f, v) {
   if (t === 'ref') return `<select id="${id}"><option value="">— ${esc(f.vazio || 'Selecione')} —</option>${(S.data[f.col] || []).slice().sort((a, b) => rotulo(f.col, a).localeCompare(rotulo(f.col, b))).map(o => `<option value="${o.id}" ${o.id === v ? 'selected' : ''}>${esc(rotulo(f.col, o))}</option>`).join('')}</select>`;
   if (t === 'textarea') return `<textarea id="${id}"${ph}>${esc(v)}</textarea>`;
   if (t === 'check') return `<label class="chk"><input type="checkbox" id="${id}" ${v ? 'checked' : ''}> ${esc(f.l)}</label>`;
-  if (t === 'image') return `<input type="file" accept="image/*" id="${id}">${v ? `<img src="${v}" class="prev">` : ''}`;
+  if (t === 'image') return `<input type="file" accept="image/*" id="${id}">${v ? `<img src="${v}" class="prev"><a href="#" id="verFoto" style="font-size:12.5px">Ver foto em tamanho grande</a>` : ''}`;
   const it = {money:'number" step="0.01" min="0', number:'number" step="any', pct:'number" min="0" max="100', date:'date'}[t] || 'text';
   return `<input id="${id}" type="${it}" value="${esc(v ?? '')}"${ph}>`;
 }
@@ -422,7 +447,7 @@ function fecharModal() { const o = $('#ov'); if (o) o.remove(); }
 
 function abrirForm(col, rec = {}) {
   const sc = SCHEMA[col], novo = !rec.id;
-  const fl = sc.fields.map(f => `<div class="fld" ${f.half ? '' : 'style="grid-column:1/-1"'}>${f.type === 'check' ? campo(f, rec[f.k]) : `<label>${esc(f.l)}${f.req ? ' *' : ''}</label>${campo(f, rec[f.k])}`}</div>`).join('');
+  const fl = sc.fields.map(f => `<div class="fld" ${f.half ? '' : 'style="grid-column:1/-1"'}>${f.type === 'check' ? campo(f, rec[f.k]) : `<label>${esc(f.l)}${f.req ? ' *' : ''}</label>${campo(f, f.type === 'image' ? (rec[f.k + 'Thumb'] || rec[f.k]) : rec[f.k])}`}</div>`).join('');
   modal(`<h3>${novo ? 'Novo' : 'Editar'}: ${esc(sc.titulo)}</h3><form id="frm"><div class="f2">${fl}</div>
     <div class="mact">${!novo ? '<button type="button" class="btn danger" id="bdel">Excluir</button>' : ''}<span style="flex:1"></span>
     <button type="button" class="btn" onclick="fecharModal()">Cancelar</button><button class="btn pri" id="bsalvar">Salvar</button></div></form>`);
@@ -432,7 +457,7 @@ function abrirForm(col, rec = {}) {
     for (const f of sc.fields) {
       const el = $('#f_' + f.k), t = f.type || 'text';
       if (t === 'check') o[f.k] = el.checked;
-      else if (t === 'image') { if (el.files[0]) { const r = await comprimir(el.files[0]); o[f.k] = r.foto; o[f.k + 'Thumb'] = r.thumb; } }
+      else if (t === 'image') { if (el.files[0]) { const r = await comprimir(el.files[0]); o.id = o.id || gid(); o._fotoNova = r.foto; delete o[f.k]; o[f.k + 'Thumb'] = r.thumb; o.temFoto = true; } }
       else if (['money','number','pct'].includes(t)) o[f.k] = el.value === '' ? '' : Number(el.value);
       else o[f.k] = el.value.trim();
       if (f.req && (o[f.k] === '' || o[f.k] == null)) { toast('Preencha: ' + f.l); el.focus(); return; }
@@ -440,11 +465,15 @@ function abrirForm(col, rec = {}) {
     $('#bsalvar').disabled = true;
     try {
       if (HOOK[col] && HOOK[col].antes) { if (await HOOK[col].antes(o, rec) === false) { $('#bsalvar').disabled = false; return; } }
+      const fotoNova = o._fotoNova; delete o._fotoNova;
+      if (fotoNova) await API.put(S.eid, 'fotos', o.id, {foto:fotoNova});
       await salvar(col, o);
       if (HOOK[col] && HOOK[col].depois) await HOOK[col].depois(o, rec);
       fecharModal(); render(); toast('Salvo!');
     } catch (err) { console.error(err); toast('Erro ao salvar: ' + err.message); $('#bsalvar').disabled = false; }
   };
+  const vf = $('#verFoto');
+  if (vf) vf.onclick = async e => { e.preventDefault(); vf.textContent = 'Abrindo...'; const x = rec.foto ? {foto:rec.foto} : await API.getDoc(S.eid, 'fotos', rec.id); vf.textContent = 'Ver foto em tamanho grande'; if (x && x.foto) { const w = window.open(); w.document.write(`<title>Foto</title><body style="margin:0;background:#000"><img src="${x.foto}" style="max-width:100%;display:block;margin:auto">`); } };
   if (!novo) $('#bdel').onclick = async () => {
     if (!confirm('Excluir este registro? Essa ação não pode ser desfeita.')) return;
     try { if (HOOK[col] && HOOK[col].excluir) await HOOK[col].excluir(rec); await excluir(col, rec.id); fecharModal(); render(); toast('Excluído'); }
@@ -465,12 +494,12 @@ const HOOK = {
     excluir:async o => {
       const lig = ['etapas','diario'].reduce((s, c) => s + S.data[c].filter(x => x.obraId === o.id).length, 0);
       if (lig && !confirm(`Esta obra tem ${lig} etapa(s)/registro(s) de diário que também serão apagados. Continuar?`)) throw new Error('cancelado');
-      for (const c of ['etapas','diario']) for (const x of S.data[c].filter(x => x.obraId === o.id)) await excluir(c, x.id);
+      for (const c of ['etapas','diario']) for (const x of S.data[c].filter(x => x.obraId === o.id)) { if (x.temFoto) await API.del(S.eid, 'fotos', x.id).catch(() => {}); await excluir(c, x.id); }
       if (o.portalToken) await API.setPortal(o.portalToken, {empresaId:S.eid, ativo:false});
     }
   },
   etapas:{depois:o => syncPortal(o.obraId), excluir:o => setTimeout(() => syncPortal(o.obraId), 50)},
-  diario:{depois:o => syncPortal(o.obraId), excluir:o => setTimeout(() => syncPortal(o.obraId), 50)},
+  diario:{depois:o => syncPortal(o.obraId), excluir:async o => { if (o.temFoto) await API.del(S.eid, 'fotos', o.id).catch(() => {}); setTimeout(() => syncPortal(o.obraId), 50); }},
   lancamentos:{antes:(o, old) => { if (o.pago && !old.pago) o.dataPagamento = hoje(); if (!o.pago) o.dataPagamento = ''; }},
   funcionarios:{antes:(o, old) => { if (!old.id && o.ativo === false && !('ativo' in old)) o.ativo = true; }},
   movimentos:{
@@ -905,13 +934,13 @@ function telaLogin(aba = 'entrar') {
     </div></div></div>`;
   const fl = $('#fl'), fc = $('#fc');
   if (fl) {
-    fl.onsubmit = async e => { e.preventDefault(); $('#l_ok').disabled = true; try { const uid = await API.login($('#l_email').value, $('#l_senha').value); await entrar(uid); } catch (err) { toast(traduz(err)); $('#l_ok').disabled = false; } };
+    fl.onsubmit = async e => { e.preventDefault(); $('#l_ok').disabled = true; try { const uid = await API.login($('#l_email').value, $('#l_senha').value); await entrar(uid); } catch (err) { console.error(err); telaLogin(); toast(traduz(err)); } };
     $('#l_esq').onclick = async e => { e.preventDefault(); const em = $('#l_email').value || prompt('Seu e-mail:'); if (!em) return; try { await API.resetSenha(em); toast('Enviamos um link de nova senha para ' + em); } catch (err) { toast(traduz(err)); } };
   }
   if (fc) fc.onsubmit = async e => {
     e.preventDefault(); $('#c_ok').disabled = true;
     try { await criarConstrutora({empresa:$('#c_emp').value.trim(), nome:$('#c_nome').value.trim(), tel:$('#c_tel').value.trim(), email:$('#c_email').value.trim().toLowerCase(), senha:$('#c_senha').value}); }
-    catch (err) { console.error(err); toast(traduz(err)); $('#c_ok').disabled = false; }
+    catch (err) { console.error(err); if (!$('#c_ok')) telaLogin('criar'); else $('#c_ok').disabled = false; toast(traduz(err)); }
   };
   const bd = $('#b_demo');
   if (bd) bd.onclick = async () => {
@@ -928,6 +957,7 @@ async function criarConstrutora(c, exemplo) {
   if (exemplo) { await dadosExemplo(); render(); }
 }
 async function entrar(uid) {
+  carregando('Abrindo sua construtora...');
   S.uid = uid; S.email = API.emailAtual();
   S.perfil = await API.getPerfil(uid);
   if (!S.perfil) {
