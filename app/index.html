@@ -980,7 +980,7 @@ async function pgAdmin() {
       const st = e.status === 'bloqueado' ? '<span class="badge b-bad">Bloqueada</span>' : d < 0 ? '<span class="badge b-bad">Vencida</span>' : e.status === 'teste' ? '<span class="badge b-info">Teste</span>' : '<span class="badge b-ok">Ativa</span>';
       return `<tr><td><b>${esc(e.nome)}</b><br><small style="color:var(--mut)">${esc(e.cidade || '')}</small></td><td>${esc(e.donoNome || '')}<br><small style="color:var(--mut)">${esc(e.donoEmail || '')} ${e.telefone ? '· ' + esc(e.telefone) : ''}</small></td><td>${st}</td>
       <td>${fdata(iso(e.venceTs || 0))}<br><small style="color:${d < 0 ? 'var(--bad)' : 'var(--mut)'}">${d < 0 ? Math.abs(d) + ' dia(s) atrás' : 'em ' + d + ' dia(s)'}</small></td>
-      <td class="r" style="white-space:nowrap"><button class="btn sm ok" data-act="admRenovar" data-a="${e.id}">+30 dias (pago)</button> ${e.status === 'bloqueado' ? `<button class="btn sm" data-act="admStatus" data-a="${e.id}" data-b="ativo">Liberar</button>` : `<button class="btn sm danger" data-act="admStatus" data-a="${e.id}" data-b="bloqueado">Bloquear</button>`}
+      <td class="r" style="white-space:nowrap"><button class="btn sm ok" data-act="admRenovar" data-a="${e.id}">+30 dias (pago)</button> ${e.status === 'bloqueado' ? `<button class="btn sm" data-act="admStatus" data-a="${e.id}" data-b="ativo">Liberar</button>` : `<button class="btn sm danger" data-act="admStatus" data-a="${e.id}" data-b="bloqueado">Bloquear</button>`} <button class="btn sm" data-act="admLimparExemplo" data-a="${e.id}">Limpar exemplos</button>
       ${e.telefone ? `<a class="btn sm" target="_blank" href="${wa(e.telefone, `Olá, ${e.donoNome || ''}! Aqui é do Gestor de Obras.`)}">WhatsApp</a>` : ''}</td></tr>`;
     }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--mut)">Nenhuma construtora cadastrada ainda.</td></tr>'}</tbody></table></div>`;
 }
@@ -2425,6 +2425,23 @@ const ACT = {
   backup:() => { const b = new Blob([JSON.stringify({empresa:S.empresa, dados:S.data, geradoEm:new Date().toISOString()}, null, 1)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `backup-gestor-de-obras-${hoje()}.json`; a.click(); },
   exemplo:async () => { if (USE_FB) return; if (!confirm('Carregar obras, clientes, funcionários e lançamentos de exemplo?')) return; toast('Carregando exemplo...'); await dadosExemplo(); S.page = 'dashboard'; render(); toast('Dados de exemplo carregados'); },
   admRenovar:async eid => { const e = await API.getEmpresa(eid); const base = Math.max(Date.now(), e.venceTs || 0); await API.setEmpresa(eid, {status:'ativo', venceTs:base + 30 * 864e5}); if (eid === S.eid) S.empresa = await API.getEmpresa(eid); render(); toast('Renovada por 30 dias'); },
+  admLimparExemplo:async eid => {
+    const emp = await API.getEmpresa(eid); if (!emp) return toast('Construtora não encontrada.');
+    toast('Procurando dados de exemplo...');
+    const D = {}; for (const c of COLS) D[c] = await API.list(eid, c, 'server');
+    const {ids, portais} = acharExemplo(D);
+    const ROT = {obras:'obra(s)', etapas:'etapa(s)', diario:'diário(s)', lancamentos:'lançamento(s)', materiais:'material(is)', pedidos:'pedido(s)', contratos:'contrato(s)', apontamentos:'apontamento(s)', funcionarios:'funcionário(s)', equipamentos:'equipamento(s)', fornecedores:'fornecedor(es)', clientes:'cliente(s)', orcamentos:'orçamento(s)', cotacoes:'cotação(ões)'};
+    const resumo = Object.entries(ids).filter(([, a]) => a.length).map(([c, a]) => `${a.length} ${ROT[c] || c}`).join(', ');
+    if (!resumo) return toast('Nenhum dado de exemplo encontrado nesta construtora.');
+    if (!confirm(`Construtora: ${emp.nome}\n\nSerão apagados (somente o que é idêntico ao exemplo do sistema e tudo que estiver ligado às obras de exemplo):\n${resumo}.\n\nIsso não pode ser desfeito. Continuar?`)) return;
+    toast('Apagando dados de exemplo...');
+    try {
+      for (const [c, a] of Object.entries(ids)) for (const id of a) await API.del(eid, c, id);
+      for (const t of portais) { try { await API.setPortal(t, {empresaId:eid, ativo:false}); } catch (e) {} }
+    } catch (err) { console.error(err); toast(traduz(err)); return; }
+    if (eid === S.eid) await carregarTudo();
+    render(); toast('Dados de exemplo removidos.');
+  },
   admStatus:async (eid, st) => { if (st === 'bloqueado' && !confirm('Bloquear o acesso desta construtora?')) return; const e = await API.getEmpresa(eid); const x = {status:st}; if (st === 'ativo' && (e.venceTs || 0) < Date.now()) x.venceTs = Date.now() + 3 * 864e5; await API.setEmpresa(eid, x); render(); toast(st === 'ativo' ? 'Liberada' : 'Bloqueada'); },
   aditivos:cid => listaAditivos(cid),
   novoAd:cid => { const ct = achar('contratos', cid); if (!ct.assinatura && !confirm('O contrato original ainda não foi assinado. Criar o aditivo mesmo assim?')) return; editorAditivo({contratoId:cid, n:(adsDe(cid).reduce((m, a) => Math.max(m, a.n), 0)) + 1, tipo:'Acréscimo', data:hoje(), vencimento:hoje(), lancar:true}); },
@@ -2611,6 +2628,40 @@ async function renderPortal(token) {
 }
 
 /* ===================== DADOS DE EXEMPLO ===================== */
+// Acha, nos dados de uma construtora, os registros criados por dadosExemplo() (comparando nome e dados fixos do exemplo).
+function acharExemplo(D) {
+  const EX_OBRAS = {'Residência Marcos Silva':'Loteamento Bela Vista, Qd. 4 Lt. 12', 'Reforma Loja Centro':'Av. Central, 900', 'Edifício Jardins':'Rua Projetada B'};
+  const EX_CLI = {'Marcos Antônio Silva':'123.456.789-00', 'Ana Paula Costa':'987.654.321-00', 'Grupo Jardins Empreendimentos':'12.345.678/0001-90'};
+  const EX_FORN = {'Depósito Material Forte':'Cimento, areia, tijolo', 'Aço Nordeste':'Ferragens e aço', 'Elétrica Cariri':'Material elétrico'};
+  const EX_FUNC = ['João Batista', 'Carlos Henrique', 'Francisco Alves', 'Pedro Lima', 'Luiz Gonzaga', 'Antônio Pereira'];
+  const EX_EQUIP = {'BT-01':'Betoneira 400 L', 'AND-L':'Andaimes (20 peças)', 'MR-02':'Martelete rompedor', 'SC-01':'Serra circular', 'VB-01':'Vibrador de concreto'};
+  const EX_MAT = ['Cimento CP-II 50kg', 'Areia média', 'Tijolo 8 furos', 'Vergalhão CA-50 10mm', 'Cabo flexível 2,5mm', 'Argamassa AC-II'];
+  const EX_ORC = ['Construção de residência térrea 110 m²', 'Ampliação — 2 salas comerciais'];
+  const g = c => D[c] || [];
+  const obras = g('obras').filter(o => EX_OBRAS[o.nome] === o.endereco), O = new Set(obras.map(o => o.id));
+  const funcs = g('funcionarios').filter(f => EX_FUNC.includes(f.nome) && O.has(f.obraId)), F = new Set(funcs.map(f => f.id));
+  const orcs = g('orcamentos').filter(o => EX_ORC.includes(o.titulo) && /^ORC-/.test(o.numero || ''));
+  const contratos = g('contratos').filter(c => O.has(c.obraId));
+  const ids = {
+    obras: obras.map(o => o.id),
+    etapas: g('etapas').filter(e => O.has(e.obraId)).map(e => e.id),
+    diario: g('diario').filter(d => O.has(d.obraId)).map(d => d.id),
+    lancamentos: g('lancamentos').filter(l => O.has(l.obraId) || (!l.obraId && l.descricao === 'Contador' && +l.valor === 650)).map(l => l.id),
+    materiais: g('materiais').filter(m => (O.has(m.obraId) && EX_MAT.includes(m.nome)) || (!m.obraId && m.nome === 'Argamassa AC-II' && +m.custoUnit === 24.5)).map(m => m.id),
+    pedidos: g('pedidos').filter(p => O.has(p.obraId)).map(p => p.id),
+    contratos: contratos.map(c => c.id),
+    apontamentos: g('apontamentos').filter(a => O.has(a.obraId) || F.has(a.funcionarioId)).map(a => a.id),
+    funcionarios: funcs.map(f => f.id),
+    equipamentos: g('equipamentos').filter(e => EX_EQUIP[e.codigo] === e.nome).map(e => e.id),
+    fornecedores: g('fornecedores').filter(f => EX_FORN[f.nome] === f.categoria).map(f => f.id),
+    orcamentos: orcs.map(o => o.id),
+    cotacoes: g('cotacoes').filter(c => c.titulo === 'Material da laje do pavimento superior').map(c => c.id)
+  };
+  // clientes de exemplo só saem se nada que fica (obra, contrato ou orçamento de verdade) ainda usa o cliente
+  const usados = new Set([...g('obras').filter(o => !O.has(o.id)).map(o => o.clienteId), ...g('contratos').filter(c => !O.has(c.obraId)).map(c => c.clienteId), ...g('orcamentos').filter(o => !ids.orcamentos.includes(o.id)).map(o => o.clienteId)]);
+  ids.clientes = g('clientes').filter(c => EX_CLI[c.nome] === c.cpfCnpj && !usados.has(c.id)).map(c => c.id);
+  return {ids, portais: obras.filter(o => o.portalToken).map(o => o.portalToken)};
+}
 async function dadosExemplo() {
   const h = hoje(), d = n => addDias(h, n), sv = salvar;
   const c1 = await sv('clientes', {nome:'Marcos Antônio Silva', cpfCnpj:'123.456.789-00', telefone:'(88) 99876-5432', email:'marcos@email.com', endereco:'Rua das Flores, 120'});
