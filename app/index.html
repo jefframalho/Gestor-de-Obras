@@ -874,7 +874,7 @@ function pgFin() {
 
 /* ---------- materiais ---------- */
 function tabelaMat(ms) {
-  return tabela('materiais', ms.sort((a, b) => a.nome.localeCompare(b.nome)), [{h:'Material', k:'nome'}, {h:'Local', f:m => esc(m.obraId ? nomeDe('obras', m.obraId) : 'Depósito central')},
+  return tabela('materiais', ms.sort((a, b) => (a.nome || '').localeCompare(b.nome || '')), [{h:'Material', k:'nome'}, {h:'Local', f:m => esc(m.obraId ? nomeDe('obras', m.obraId) : 'Depósito central')},
     {h:'Estoque', r:1, f:m => { const b = m.minimo !== '' && m.minimo != null && +m.quantidade < +m.minimo; return `<span class="badge ${b ? 'b-bad' : 'b-ok'}">${num(m.quantidade)} ${esc(m.unidade || '')}</span>`; }},
     {h:'Mínimo', r:1, f:m => m.minimo === '' || m.minimo == null ? '—' : num(m.minimo)}, ...(pode('financeiro') ? [{h:'Valor em estoque', r:1, f:m => brl((+m.quantidade || 0) * (+m.custoUnit || 0))}] : []),
     {h:'', r:1, f:m => `<button class="btn sm" data-act="mov" data-a="${m.id}" data-b="Entrada">+ Entrada</button> <button class="btn sm" data-act="mov" data-a="${m.id}" data-b="Saída">− Saída</button>`}], 'Nenhum material cadastrado.');
@@ -898,7 +898,7 @@ function pgMat() {
   else if (at === 'eqp') { const es = S.data.equipamentos.filter(e => e.status !== 'Baixado'); c = `<div class="kpis">${[['Na obra', es.filter(e => e.obraId).length], ['No depósito', es.filter(e => !e.obraId && e.status === 'Disponível').length], ['Em manutenção', es.filter(e => e.status === 'Manutenção').length], ['Locados', es.filter(e => e.origem === 'Locado').length]].map(([l, v]) => `<div class="kpi"><span>${l}</span><b>${v}</b></div>`).join('')}</div>
     <div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="equipamentos">+ Equipamento</button></div>` + tabelaEq(S.data.equipamentos.slice()); }
   else c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="fornecedores">+ Fornecedor</button></div>`
-    + tabela('fornecedores', S.data.fornecedores.slice().sort((a, b) => a.nome.localeCompare(b.nome)), [{h:'Nome', k:'nome'}, {h:'Fornece', k:'categoria'}, {h:'WhatsApp', k:'telefone'}, {h:'E-mail', k:'email'}, {h:'Pedidos', r:1, f:f => S.data.pedidos.filter(p => p.fornecedorId === f.id).length}], 'Nenhum fornecedor.');
+    + tabela('fornecedores', S.data.fornecedores.slice().sort((a, b) => (a.nome || '').localeCompare(b.nome || '')), [{h:'Nome', k:'nome'}, {h:'Fornece', k:'categoria'}, {h:'WhatsApp', k:'telefone'}, {h:'E-mail', k:'email'}, {h:'Pedidos', r:1, f:f => S.data.pedidos.filter(p => p.fornecedorId === f.id).length}], 'Nenhum fornecedor.');
   return topo('Materiais', 'Estoque, cotações, compras, ferramentas e fornecedores') + tabs('mat', [['est','Estoque'], ['mov','Movimentações'], ['cot','Cotações'], ['ped','Pedidos de compra'], ['eqp','Ferramentas e equipamentos'], ['for','Fornecedores']]) + c;
 }
 
@@ -907,7 +907,7 @@ function pgEquipe() {
   const at = tabAt('eq', 'func'), fin = pode('financeiro') || S.perfil.papel === 'admin';
   let c = '';
   if (at === 'func') c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="funcionarios">+ Funcionário</button></div>`
-    + tabela('funcionarios', S.data.funcionarios.slice().sort((a, b) => (b.ativo !== false) - (a.ativo !== false) || a.nome.localeCompare(b.nome)), [
+    + tabela('funcionarios', S.data.funcionarios.slice().sort((a, b) => (b.ativo !== false) - (a.ativo !== false) || (a.nome || '').localeCompare(b.nome || '')), [
       {h:'Nome', f:f => `<b>${esc(f.nome)}</b>${f.ativo === false ? ' <span class="badge b-mut">inativo</span>' : ''}${docsVencendo(f).length ? '<br>' + badgeDocs(f) : ''}`}, {h:'Função', f:f => `${esc(f.funcao || '')}<br><small style="color:var(--mut)">${esc(f.tipo || 'Diarista')}</small>`}, {h:'Obra atual', f:f => esc(nomeDe('obras', f.obraId))},
       {h:'Diária', r:1, f:f => brl(f.diaria)}, {h:'Diárias em aberto', r:1, f:f => num(diariasAbertas(f.id).reduce((s, a) => s + +a.dias, 0))},
       ...(fin ? [{h:'A pagar', r:1, f:f => `<b>${brl(diariasAbertas(f.id).reduce((s, a) => s + +a.dias, 0) * (+f.diaria || 0))}</b>`}, {h:'', r:1, f:f => diariasAbertas(f.id).length ? `<button class="btn sm ok" data-act="pagarFunc" data-a="${f.id}">Pagar</button>` : ''}] : [])], 'Nenhum funcionário cadastrado.');
@@ -929,7 +929,7 @@ function pgCli() {
   const at = tabAt('cli', 'cli');
   let c = '';
   if (at === 'cli') c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="clientes">+ Cliente</button></div>`
-    + tabela('clientes', S.data.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome)), [{h:'Nome', f:c => `<b>${esc(c.nome)}</b>`}, {h:'CPF / CNPJ', k:'cpfCnpj'}, {h:'WhatsApp', k:'telefone'},
+    + tabela('clientes', S.data.clientes.slice().sort((a, b) => (a.nome || '').localeCompare(b.nome || '')), [{h:'Nome', f:c => `<b>${esc(c.nome)}</b>`}, {h:'CPF / CNPJ', k:'cpfCnpj'}, {h:'WhatsApp', k:'telefone'},
       {h:'Obras', f:c => esc(S.data.obras.filter(o => o.clienteId === c.id).map(o => o.nome).join(', ') || '—')},
       {h:'', r:1, f:c => c.telefone ? `<a class="btn sm" target="_blank" data-stop href="${wa(c.telefone, `Olá, ${c.nome.split(' ')[0]}! Aqui é da ${S.empresa.nome}.`)}">WhatsApp</a>` : ''}], 'Nenhum cliente cadastrado.');
   else c = `<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn pri" data-act="novo" data-a="contratos">+ Contrato</button></div>`
@@ -1118,7 +1118,7 @@ function editorOrc(rec) {
   modal(`<h3>${o.id ? 'Orçamento ' + esc(o.numero) : 'Novo orçamento — ' + esc(o.numero)}</h3>
   <datalist id="dl_etapas">${ETAPAS_PADRAO.map(e => `<option value="${e}">`).join('')}</datalist>${DL_SERV()}
   <div class="f2">
-    <div class="fld"><label>Cliente cadastrado</label><select id="o_cli"><option value="">— Cliente novo / não cadastrado —</option>${S.data.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome)).map(c => `<option value="${c.id}" ${c.id === o.clienteId ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></div>
+    <div class="fld"><label>Cliente cadastrado</label><select id="o_cli"><option value="">— Cliente novo / não cadastrado —</option>${S.data.clientes.slice().sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map(c => `<option value="${c.id}" ${c.id === o.clienteId ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></div>
     <div class="fld" id="o_novo"><label>Nome e WhatsApp do cliente</label><div class="row" style="flex-wrap:nowrap"><input id="o_cnome" placeholder="Nome" value="${esc(o.clienteNome)}"><input id="o_ctel" placeholder="WhatsApp" value="${esc(o.clienteTel)}" style="max-width:150px"></div></div>
     <div class="fld" style="grid-column:1/-1"><label>Serviço / título *</label><input id="o_tit" value="${esc(o.titulo)}" placeholder="Ex.: Construção de residência térrea 120 m²"></div>
     <div class="fld" style="grid-column:1/-1"><label>Local da obra</label><input id="o_end" value="${esc(o.endereco)}"></div>
@@ -2151,7 +2151,7 @@ const ST_EQ = {'Disponível':'b-ok', 'Em uso':'b-info', 'Manutenção':'b-warn',
 const eqDesde = e => { const h = e.historico || []; return h.length ? h[h.length - 1].data : (e.criadoEm ? iso(e.criadoEm) : ''); };
 const devolucaoAlerta = e => e.origem === 'Locado' && e.devolucao && e.status !== 'Baixado' && diasAte(e.devolucao) <= 3;
 function tabelaEq(es) {
-  return tabela('equipamentos', es.sort((a, b) => a.nome.localeCompare(b.nome)), [
+  return tabela('equipamentos', es.sort((a, b) => (a.nome || '').localeCompare(b.nome || '')), [
     {h:'Equipamento', f:e => `<b>${esc(e.nome)}</b>${e.codigo ? ` <small style="color:var(--mut)">#${esc(e.codigo)}</small>` : ''}<br><small style="color:var(--mut)">${esc(e.categoria || '')}${e.origem === 'Locado' ? ` · locado${e.locadora ? ' de ' + esc(e.locadora) : ''}` : ''}</small>`},
     {h:'Onde está', f:e => esc(e.obraId ? nomeDe('obras', e.obraId) : 'Depósito')}, {h:'Com quem', f:e => esc(e.responsavelId ? nomeDe('funcionarios', e.responsavelId) : '—')},
     {h:'Situação', f:e => `<span class="badge ${ST_EQ[e.status] || 'b-mut'}">${esc(e.status || 'Disponível')}</span>${devolucaoAlerta(e) ? `<br><span class="badge ${diasAte(e.devolucao) < 0 ? 'b-bad' : 'b-warn'}" style="margin-top:3px">Devolver ${diasAte(e.devolucao) < 0 ? 'vencido' : diasAte(e.devolucao) === 0 ? 'hoje' : 'em ' + diasAte(e.devolucao) + 'd'}</span>` : ''}`},
@@ -2210,7 +2210,7 @@ function editorCotacao(rec) {
     <div class="mact">${rec.id && !fechada ? '<button type="button" class="btn danger" id="c_del">Excluir</button>' : ''}<span style="flex:1"></span><button type="button" class="btn" onclick="fecharModal()">Fechar</button>${fechada ? '' : '<button type="button" class="btn pri" id="c_ok">Salvar</button>'}</div>`, 'wide');
   const itens = () => { $('#c_itens').innerHTML = c.itens.map((i, k) => `<div class="rrow"><input type="number" step="any" data-ik="${k}" data-if="qtd" value="${esc(i.qtd)}" style="max-width:90px;flex:0 0 90px" ${fechada ? 'disabled' : ''}><select data-ik="${k}" data-if="unidade" style="max-width:100px;flex:0 0 100px" ${fechada ? 'disabled' : ''}>${OPC.unid.map(u => `<option ${u === i.unidade ? 'selected' : ''}>${u}</option>`).join('')}</select><input data-ik="${k}" data-if="descricao" value="${esc(i.descricao)}" placeholder="Ex.: Cimento CP-II 50 kg" style="flex:3" ${fechada ? 'disabled' : ''}>${fechada ? '' : `<button type="button" class="btn sm danger" data-irm="${k}">×</button>`}</div>`).join(''); };
   const forn = () => {
-    const fs3 = S.data.fornecedores.slice().sort((a, b) => a.nome.localeCompare(b.nome));
+    const fs3 = S.data.fornecedores.slice().sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
     $('#c_forn').innerHTML = !fs3.length ? '<p style="color:var(--mut)">Cadastre os fornecedores em Materiais → Fornecedores.</p>' : `<div class="rgrid">${fs3.map(f => { const on = c.fornecedores.includes(f.id);
       return `<div class="rpes"><input type="checkbox" data-fsel="${f.id}" ${on ? 'checked' : ''} ${fechada ? 'disabled' : ''}><span><b>${esc(f.nome)}</b> <small>${esc(f.categoria || '')}</small></span>${on && f.telefone && !fechada ? `<a class="btn sm" target="_blank" data-fwa="${f.id}" href="#">WhatsApp</a>` : ''}</div>`; }).join('')}</div>`;
   };
