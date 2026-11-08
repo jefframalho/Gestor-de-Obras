@@ -963,7 +963,7 @@ function pgCfg() {
     <button class="btn pri" style="margin-top:12px" data-act="salvarDiarias">Salvar diárias</button></div>` : ''}
   ${adm ? `<div class="card" style="margin-top:16px"><h3>Contratos</h3><p style="color:var(--mut);margin-top:0">Modelo usado nos contratos e assinatura da construtora (entra como CONTRATADA).</p>
     <div class="row"><button class="btn" data-act="modeloCt">Editar modelo de contrato</button><button class="btn" data-act="assEmp">${e.assinatura ? 'Refazer assinatura da construtora' : 'Cadastrar assinatura da construtora'}</button>${e.assinatura ? `<img src="${e.assinatura}" style="height:40px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:2px 8px">` : ''}</div></div>` : ''}
-  ${adm ? `<div class="card" style="margin-top:16px"><h3>Seus dados</h3><p style="color:var(--mut);margin-top:0">Baixe uma cópia de todas as informações da construtora (backup).</p><div class="row"><button class="btn" data-act="backup">Baixar backup (JSON)</button>${!S.data.obras.length ? '<button class="btn" data-act="exemplo">Carregar dados de exemplo</button>' : ''}</div></div>` : ''}`;
+  ${adm ? `<div class="card" style="margin-top:16px"><h3>Seus dados</h3><p style="color:var(--mut);margin-top:0">Baixe uma cópia de todas as informações da construtora (backup).</p><div class="row"><button class="btn" data-act="backup">Baixar backup (JSON)</button>${!USE_FB && !S.data.obras.length ? '<button class="btn" data-act="exemplo">Carregar dados de exemplo</button>' : ''}</div></div>` : ''}`;
 }
 
 /* ---------- painel do dono do sistema (assinantes) ---------- */
@@ -2423,7 +2423,7 @@ const ACT = {
   },
   rmUsuario:async uid => { if (!confirm('Remover o acesso deste usuário à construtora?')) return; await API.delPerfil(uid); carregarUsuarios(); toast('Acesso removido'); },
   backup:() => { const b = new Blob([JSON.stringify({empresa:S.empresa, dados:S.data, geradoEm:new Date().toISOString()}, null, 1)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `backup-gestor-de-obras-${hoje()}.json`; a.click(); },
-  exemplo:async () => { if (!confirm('Carregar obras, clientes, funcionários e lançamentos de exemplo?')) return; toast('Carregando exemplo...'); await dadosExemplo(); S.page = 'dashboard'; render(); toast('Dados de exemplo carregados'); },
+  exemplo:async () => { if (USE_FB) return; if (!confirm('Carregar obras, clientes, funcionários e lançamentos de exemplo?')) return; toast('Carregando exemplo...'); await dadosExemplo(); S.page = 'dashboard'; render(); toast('Dados de exemplo carregados'); },
   admRenovar:async eid => { const e = await API.getEmpresa(eid); const base = Math.max(Date.now(), e.venceTs || 0); await API.setEmpresa(eid, {status:'ativo', venceTs:base + 30 * 864e5}); if (eid === S.eid) S.empresa = await API.getEmpresa(eid); render(); toast('Renovada por 30 dias'); },
   admStatus:async (eid, st) => { if (st === 'bloqueado' && !confirm('Bloquear o acesso desta construtora?')) return; const e = await API.getEmpresa(eid); const x = {status:st}; if (st === 'ativo' && (e.venceTs || 0) < Date.now()) x.venceTs = Date.now() + 3 * 864e5; await API.setEmpresa(eid, x); render(); toast(st === 'ativo' ? 'Liberada' : 'Bloqueada'); },
   aditivos:cid => listaAditivos(cid),
