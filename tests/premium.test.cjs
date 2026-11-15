@@ -44,3 +44,15 @@ test('Fase 4: abas da obra numa linha com rolagem no celular; cartões de obra c
   assert.ok(R.some(r=>r.sel==='.tabs'&&/flex-wrap:nowrap/.test(r.dec)&&/overflow-x:auto/.test(r.dec)));
   assert.match(decl('.obra:hover'),/border-color:var\(--pri\)/);
 });
+
+test('Fase 5: nome da etapa do cronograma em até duas linhas no celular',()=>{
+  assert.ok(R.some(r=>r.sel==='.gname'&&/-webkit-line-clamp:2/.test(r.dec)&&/white-space:normal/.test(r.dec)));
+});
+
+test('regressão: rodapé do menu só vira grade no computador (no celular continua oculto)',()=>{
+  assert.doesNotMatch(premium.replace(/@media[^{]*\{[^{}]*(\{[^{}]*\}[^{}]*)*\}/g,''),/\.sidefoot\{display:grid/,'display:grid fora de @media anularia o display:none do celular');
+  assert.match(premium,/@media \(min-width:861px\)\{\.sidefoot\{display:grid;gap:2px\}\}/);
+});
+test('regressão: indicadores em duas colunas no celular',()=>{
+  assert.match(premium,/@media \(max-width:860px\)\{\.kpis\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}\}/);
+});
