@@ -14,6 +14,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="Gestor de Obras — sistema de gestão para construtoras: obras, cronograma, diário de obra, financeiro, materiais, equipe e clientes.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://www.gstatic.com">
 <link rel="preconnect" href="https://firestore.googleapis.com">
@@ -255,6 +256,220 @@ table.itens tbody tr{cursor:default}table.itens tbody tr:hover{background:none}
   .gname{width:90px}.gfoot{padding-left:100px}
   .dia img{width:84px;height:70px}
 }
+/* ===== Premium UI · Fase 1: tipografia, espaçamento e bordas (cores originais preservadas) ===== */
+:root{
+  --fs-xs:11.5px;--fs-sm:12.5px;--fs-md:14px;--fs-lg:15.5px;--fs-xl:18px;--fs-2xl:22px;
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;
+  --r-sm:7px;--r-md:9px;--r-lg:12px;
+}
+html,body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+h1,h2,h3,h4,h5{letter-spacing:-.01em}
+.top h1{font-weight:700;line-height:1.2}
+.card h3{font-size:var(--fs-lg);letter-spacing:-.01em}
+/* Números alinhados em coluna e valores que não quebram no meio (ex.: "-R$ 16.850,00") */
+.kpi b,.r,td.r,.totbox b,.obra .nums b,.pct b,.big,.gfoot{font-variant-numeric:tabular-nums}
+.kpi b{white-space:nowrap;font-size:clamp(18px,1.1vw + 7px,22px)}
+td.r,.r{white-space:nowrap}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+@media (max-width:860px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi span{display:block;line-height:1.35}
+/* Foco visível e consistente (teclado), na cor principal da marca */
+:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+.btn:focus-visible,.sel:focus-visible,.tabs button:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+.btn{transition:background-color .12s,border-color .12s,color .12s}
+.btn[disabled],.btn:disabled{opacity:.55;cursor:not-allowed}
+@media (prefers-reduced-motion:reduce){.btn,.obra{transition:none}}
+/* ===== Premium UI · Fase 2: menu lateral e navegação ===== */
+.nav{gap:2px;padding:var(--sp-2) var(--sp-3)}
+.nav button{min-height:40px;transition:background-color .12s,color .12s}
+.nav button svg{opacity:.8}
+.nav button:hover svg,.nav button.on svg{opacity:1}
+.nav button.on{font-weight:600}
+.nav button:focus-visible{outline:2px solid var(--pri);outline-offset:-2px}
+.brand{letter-spacing:-.01em}
+/* o rodapé do menu continua oculto no celular (regra original); só no computador vira grade */
+@media (min-width:861px){.sidefoot{display:grid;gap:2px}}
+.sidefoot button{transition:border-color .12s,color .12s}
+.sidefoot button:hover{border-color:var(--sideInk);color:var(--card)}
+.sidefoot button:focus-visible,.side .msair:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+/* Menu inferior (celular): toque confortável, item atual com indicador na cor da marca */
+.bnav button{min-height:52px;position:relative;border-radius:var(--r-md)}
+.bnav button.on::before{content:"";position:absolute;top:-6px;left:28%;right:28%;height:3px;border-radius:0 0 3px 3px;background:var(--pri)}
+.bnav button:focus-visible{outline:2px solid var(--pri);outline-offset:-2px}
+.mais button{min-height:76px;transition:border-color .12s,background-color .12s}
+.mais button:hover{border-color:var(--pri)}
+.mais button:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+@media (max-width:860px){
+  .side .msair{min-height:40px}
+  .tabs button{min-height:44px}
+}
+/* ===== Premium UI · Fase 3: painel executivo ===== */
+/* Cartões em duas colunas não se esticam até a altura da coluna vizinha */
+.grid2{align-items:start}
+.grid2>div:not(.card){display:grid;gap:16px;align-content:start}
+.grid2>div:not(.card)>.card{margin:0!important}
+.kpis{gap:12px}
+.kpi{display:flex;flex-direction:column;min-height:104px}
+.kpi span{min-height:2.7em}
+.kpi small{margin-top:auto;padding-top:4px;line-height:1.35}
+/* Listas do painel: linhas compactas e alinhadas */
+.list .it{padding:10px 0}
+.list .it>div:first-child{min-width:0}
+.list .it b{font-weight:600}
+.list .it .r b,.list .it>div:last-child b{font-variant-numeric:tabular-nums}
+/* Estados vazio e carregando */
+.vazio{padding:28px 20px;border-radius:var(--r-lg)}
+.boot{gap:4px}
+@media (max-width:860px){
+  .kpi{min-height:0}
+  .kpi span{min-height:0}
+}
+/* ===== Premium UI · Fase 4: gestão de obras ===== */
+.obra{transition:transform .12s,border-color .12s}
+.obra:hover{border-color:var(--pri)}
+.obra:focus-within{border-color:var(--pri)}
+.obra h4{letter-spacing:-.01em}
+.obra .nums{gap:12px}
+.obra .nums>div{min-width:0}
+.top .row{justify-content:flex-end}
+.tabs{scrollbar-width:thin}
+.tabs button{transition:color .12s,border-color .12s}
+.tabs button:hover{color:var(--ink)}
+@media (max-width:860px){
+  /* Abas numa linha só, com rolagem lateral (antes quebravam em duas linhas) */
+  .tabs{flex-wrap:nowrap;gap:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-left:-16px;margin-right:-16px;padding:0 16px}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button{flex:none}
+  .top{align-items:flex-start}
+}
+/* ===== Premium UI · Fase 5: cronogramas e planejamento ===== */
+.grow{min-height:26px}
+.gtrack{border:1px solid var(--line)}
+.gbar{border-radius:var(--r-sm)}
+.gtoday{border-radius:2px}
+.gfoot{margin-top:4px}
+@media (max-width:860px){
+  /* Nome da etapa em até duas linhas, sem corte no meio da palavra */
+  .gname{width:104px;white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3;text-overflow:clip}
+  .gfoot{padding-left:114px}
+}
+/* ===== Premium UI · Fase 6: financeiro e orçamentos ===== */
+.totbox .tt b{font-variant-numeric:tabular-nums}
+.totbox{gap:8px 24px}
+@media (max-width:860px){
+  /* Cartões das tabelas: rótulo à esquerda e informações empilhadas à direita (antes lado a lado, espremidas) */
+  table.cards td{display:grid;grid-template-columns:minmax(84px,auto) minmax(0,1fr);column-gap:12px;row-gap:2px;align-items:start}
+  table.cards td::before{grid-column:1;grid-row:1/span 3;padding-top:2px}
+  table.cards td>*{grid-column:2;justify-self:end;text-align:right;max-width:100%}
+  table.cards td>small,table.cards td>.mut{display:block}
+  table.cards td:first-child{display:block}
+  table.cards td[data-label=""]{display:flex;justify-content:flex-end}
+  /* Textos longos (descrição, item, serviço...): valor em largura total abaixo do rótulo */
+  table.cards td:not(:first-child):is([data-label="Descrição"],[data-label="Item"],[data-label="Serviço"],[data-label="Material"],[data-label="Observação"],[data-label="Endereço"],[data-label="Fornecedor"],[data-label="Histórico"]){display:block;text-align:left}
+  table.cards td:not(:first-child):is([data-label="Descrição"],[data-label="Item"],[data-label="Serviço"],[data-label="Material"],[data-label="Observação"],[data-label="Endereço"],[data-label="Fornecedor"],[data-label="Histórico"])::before{display:block;margin-bottom:2px}
+  table.cards td:not(:first-child):is([data-label="Descrição"],[data-label="Item"],[data-label="Serviço"],[data-label="Material"],[data-label="Observação"],[data-label="Endereço"],[data-label="Fornecedor"],[data-label="Histórico"])>*{display:block;text-align:left;justify-self:auto;max-width:none}
+  table.cards td:not(:first-child):is([data-label="Descrição"],[data-label="Item"],[data-label="Serviço"],[data-label="Material"],[data-label="Observação"],[data-label="Endereço"],[data-label="Fornecedor"],[data-label="Histórico"])>br{display:none}
+}
+/* ===== Premium UI · Fase 7: estoque, materiais e compras ===== */
+/* Comparativo de cotação: tabela larga mantém a estrutura, com rolagem interna e 1ª coluna fixa */
+.tw:has(table.cot){overflow-x:auto}
+table.cot th:first-child,table.cot td:first-child{position:sticky;left:0;z-index:1;background:var(--card);box-shadow:inset -1px 0 0 var(--line)}
+table.cot th:first-child{background:var(--soft)}
+.catlist label{transition:border-color .12s}
+.catlist label:hover{border-color:var(--pri)}
+@media (max-width:860px){
+  /* Botões pequenos dentro dos cartões (Entrada, Saída, Paguei...): toque confortável */
+  table.cards td .btn.sm{min-height:36px;padding:6px 12px}
+}
+/* ===== Premium UI · Fase 8: funcionários, equipes e operação ===== */
+/* Listas de seleção (diárias do dia, equipe presente, permissões): linha inteira clicável e toque confortável */
+.checks label{cursor:pointer;min-height:36px}
+.checks label:hover{color:var(--pri2)}
+.rpes{transition:border-color .12s}
+.rpes:hover{border-color:var(--pri)}
+.opc{transition:border-color .12s,background-color .12s}
+.opc:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+@media (max-width:860px){
+  .checks label,.chk{min-height:44px}
+  .rpes{min-height:44px}
+  .dgrid2 label{min-height:44px}
+}
+/* ===== Premium UI · Fase 9: formulários ===== */
+.fld input:not([type=checkbox]),.fld select,.fld textarea{min-height:40px;transition:border-color .12s}
+.fld input:not([type=checkbox]):hover:not(:focus):not(:disabled),.fld select:hover:not(:focus):not(:disabled),.fld textarea:hover:not(:focus):not(:disabled){border-color:var(--mut)}
+.fld input:disabled,.fld select:disabled,.fld textarea:disabled,.fld input[readonly]{opacity:.7;cursor:not-allowed}
+.fld input::placeholder,.fld textarea::placeholder{color:var(--mut);opacity:.8}
+.mact{flex-wrap:wrap}
+@media (max-width:860px){
+  /* 16px nos campos evita o zoom automático do iPhone ao tocar */
+  .fld input:not([type=checkbox]),.fld select,.fld textarea,.sel,.endb input,.endb select,.rrow input,.rrow select,.vit input,table.itens input,table.itens select,table.cot input,.dgrid2 input{font-size:16px}
+  .fld input:not([type=checkbox]),.fld select,.sel{min-height:44px}
+  .mact .btn{flex:1 1 auto;justify-content:center;min-height:44px}
+}
+/* ===== Premium UI · Fase 10: tabelas ===== */
+td{padding:9px 12px}
+th{padding:9px 12px}
+tbody tr{transition:background-color .1s}
+tbody tr:focus-visible{outline:2px solid var(--pri);outline-offset:-2px;background:var(--soft)}
+td b{font-weight:600}
+.tw{scrollbar-width:thin}
+@media (max-width:860px){
+  table.cards tbody tr:focus-visible{outline-offset:2px}
+}
+/* ===== Premium UI · Fase 11: impressão ===== */
+@media print{
+  /* paleta-clara-original:inicio — mesmos valores do :root original; no tema escuro o papel sai como no tema claro */
+  :root:not(#impressao){--bg:#f4f5f7;--card:#ffffff;--ink:#16191f;--mut:#6b7280;--line:#e5e7eb;--soft:#f9fafb;--priSoft:#fff3e6;--side:#14181f;--sideAct:#232a35;--okSoft:#e8f7ee;--warnSoft:#fef6e4;--badSoft:#fdecec;--infoSoft:#eaf1fe;--cv-grid:#e8eaee;--cv-mut:#6b7280;--cv-ink:#16191f}
+  /* paleta-clara-original:fim */
+  @page{size:A4;margin:12mm}
+  body{background:var(--card)!important;color:var(--ink)}
+  /* Some o que só faz sentido na tela */
+  .side,.bnav,.toast,.ov,.banner,.btn,.msair,.tabs,.mais{display:none!important}
+  .app{display:block!important}
+  .main{padding:0!important}
+  .card,.kpi,.obra,.vazio{box-shadow:none!important;break-inside:avoid}
+  .kpis{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px}
+  .tw{overflow:visible!important;border:1px solid var(--line)}
+  /* Tabelas voltam a ser tabelas (no celular viram cartões) */
+  table.cards{display:table!important;width:100%}
+  table.cards thead{display:table-header-group!important}
+  table.cards tbody{display:table-row-group!important}
+  table.cards tr{display:table-row!important;border:0!important;padding:0!important;margin:0!important;box-shadow:none!important;background:none!important;break-inside:avoid}
+  table.cards td{display:table-cell!important;padding:5px 8px!important;border-bottom:1px solid var(--line)!important;text-align:left!important;font-size:inherit!important;margin:0!important;vertical-align:top}
+  table.cards td.r{text-align:right!important}
+  table.cards td::before{display:none!important}
+  table.cards td>*{text-align:inherit!important}
+  table.cards td>br{display:none!important}
+  table.cards td:empty{display:table-cell!important}
+  th{font-size:10px}
+  a{color:inherit;text-decoration:none}
+}
+/* ===== Premium UI · Fase 12: celular ===== */
+@media (max-width:860px){
+  /* Aviso flutuante acima da barra inferior (antes cobria os botões de navegação) */
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom));max-width:calc(100% - 32px);text-align:center}
+  /* Janelas de formulário aproveitam melhor a tela pequena */
+  .ov{padding:16px 10px 96px}
+  .modal{padding:18px 16px}
+  .main{overflow-x:clip}
+}
+/* ===== Premium UI · Fase 13: login e perfis ===== */
+.authBox .btn{min-height:44px}
+.authBox a{display:inline-block;padding:6px 2px}
+.authBox a:focus-visible{border-radius:var(--r-sm)}
+@media (max-width:860px){
+  /* Abas do login alinhadas ao formulário (sem a rolagem lateral das telas internas) */
+  .authBox .tabs{margin-left:0;margin-right:0;padding:0}
+  .authR{padding:28px 20px 40px}
+}
+/* ===== Premium UI · Fase 14: desempenho e acabamento ===== */
+/* Quem pediu ao sistema para reduzir movimento não vê animações nem transições */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+/* Toque no celular sem o atraso nem o realce cinza do navegador */
+button,a,[data-act],tbody tr[data-col]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+tbody tr[data-col]:active{background:var(--soft)}
 </style>
 </head>
 <body>
@@ -300,6 +515,7 @@ const soDig = s => String(s || '').replace(/\D/g, '');
 const wa = (tel, txt) => { let t = soDig(tel); if (t && t.length <= 11) t = '55' + t; return `https://wa.me/${t}?text=${encodeURIComponent(txt || '')}`; };
 function toast(m) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
 const IC = {
+  mais:'<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
   dash:'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
   obra:'<path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/>',
   fin:'<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
@@ -711,7 +927,7 @@ function montarApp() {
   const disp = [...PAGES.filter(p => pode(p[0])), ...(isAdmin() ? [['admin','Assinantes','adm']] : [])];
   const pref = ['dashboard','obras','financeiro','orcamentos','materiais','equipe','admin'];
   const prin = pref.map(k => disp.find(p => p[0] === k)).filter(Boolean).slice(0, 4);
-  const bnav = prin.map(p => `<button data-act="nav" data-a="${p[0]}">${ico(p[2])}<span>${p[1]}</span></button>`).join('') + `<button data-act="maisMenu" data-a="__mais">${ico('dash')}<span>Mais</span></button>`;
+  const bnav = prin.map(p => `<button data-act="nav" data-a="${p[0]}">${ico(p[2])}<span>${p[1]}</span></button>`).join('') + `<button data-act="maisMenu" data-a="__mais">${ico('mais')}<span>Mais</span></button>`;
   BNAV_PRIN = prin.map(p => p[0]); MAIS_LIST = disp;
   $('#root').innerHTML = `<div class="app"><aside class="side"><div class="brand"><div class="logo">${ico('logo')}</div><div>Gestor de Obras<small>${esc(S.empresa ? S.empresa.nome : 'Administração')}</small></div><button class="msair" data-act="sair">Sair</button></div>
     <nav class="nav">${navs}</nav><div class="sidefoot">${btnInstalar('binst-side')}<b>${esc(S.perfil ? S.perfil.nome : S.email)}</b>${esc(S.perfil ? PAPEIS[S.perfil.papel] : 'Administrador do sistema')}<button data-act="sair">Sair</button></div></aside>
@@ -2750,6 +2966,17 @@ async function instalarApp() {
     ? `<ol class="passos-inst"><li>Toque no botão <b>Compartilhar</b> <span class="kbd">⬆︎</span> na barra do Safari.</li><li>Role e toque em <b>Adicionar à Tela de Início</b>.</li><li>Toque em <b>Adicionar</b>. Pronto: o ícone <b>Gestor Obras</b> aparece na sua tela.</li></ol><p style="color:var(--mut);font-size:12.5px">No iPhone, abra este site pelo <b>Safari</b> para instalar.</p>`
     : `<ol class="passos-inst"><li>Toque no menu <span class="kbd">⋮</span> do navegador (canto de cima).</li><li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li><li>Confirme. O ícone <b>Gestor Obras</b> aparece na sua tela.</li></ol><p style="color:var(--mut);font-size:12.5px">Use o <b>Chrome</b> (Android) ou o <b>Chrome/Edge</b> (computador).</p>`;
   modal(`<h3>📲 Instalar o Gestor de Obras</h3><p style="margin-top:0">Fica com ícone na tela inicial e abre em tela cheia, como um aplicativo. As atualizações chegam sozinhas.</p>${passo}<div class="mact"><span style="flex:1"></span><button class="btn pri" onclick="fecharModal()">Entendi</button></div>`);
+}
+/* ---------- Tabelas: acesso por teclado (só apresentação) ----------
+   Linhas que abrem um registro ao clicar ficam focáveis; Enter/Espaço disparam o MESMO clique. */
+function prepararLinhas() {
+  document.querySelectorAll("tbody tr[data-col][data-id]:not([tabindex])").forEach(tr => { tr.tabIndex = 0; });
+}
+if (typeof MutationObserver !== "undefined" && typeof document !== "undefined" && document.body) {
+  new MutationObserver(prepararLinhas).observe(document.body, {childList: true, subtree: true});
+  document.addEventListener("keydown", e => {
+    if ((e.key === "Enter" || e.key === " ") && e.target?.matches?.("tbody tr[data-col][data-id]")) { e.preventDefault(); e.target.click(); }
+  });
 }
 (async () => {
   const q = new URLSearchParams(location.search);
