@@ -364,10 +364,21 @@ td.r,.r{white-space:nowrap}
   table.cards td:first-child{display:block}
   table.cards td[data-label=""]{display:flex;justify-content:flex-end}
   /* Textos longos (descrição, item, serviço...): valor em largura total abaixo do rótulo */
-  table.cards td:is([data-label="Descrição"],[data-label="Item"],[data-label="Serviço"],[data-label="Material"],[data-label="Observação"],[data-label="Endereço"],[data-label="Fornecedor"],[data-label="Histórico"]){display:block;text-align:left}
-  table.cards td:is([data-label="Descrição"],[data-label="Item"],[data-label="Serviço"],[data-label="Material"],[data-label="Observação"],[data-label="Endereço"],[data-label="Fornecedor"],[data-label="Histórico"])::before{display:block;margin-bottom:2px}
-  table.cards td:is([data-label="Descrição"],[data-label="Item"],[data-label="Serviço"],[data-label="Material"],[data-label="Observação"],[data-label="Endereço"],[data-label="Fornecedor"],[data-label="Histórico"])>*{display:block;text-align:left;justify-self:auto;max-width:none}
-  table.cards td:is([data-label="Descrição"],[data-label="Item"],[data-label="Serviço"],[data-label="Material"],[data-label="Observação"],[data-label="Endereço"],[data-label="Fornecedor"],[data-label="Histórico"])>br{display:none}
+  table.cards td:not(:first-child):is([data-label="Descrição"],[data-label="Item"],[data-label="Serviço"],[data-label="Material"],[data-label="Observação"],[data-label="Endereço"],[data-label="Fornecedor"],[data-label="Histórico"]){display:block;text-align:left}
+  table.cards td:not(:first-child):is([data-label="Descrição"],[data-label="Item"],[data-label="Serviço"],[data-label="Material"],[data-label="Observação"],[data-label="Endereço"],[data-label="Fornecedor"],[data-label="Histórico"])::before{display:block;margin-bottom:2px}
+  table.cards td:not(:first-child):is([data-label="Descrição"],[data-label="Item"],[data-label="Serviço"],[data-label="Material"],[data-label="Observação"],[data-label="Endereço"],[data-label="Fornecedor"],[data-label="Histórico"])>*{display:block;text-align:left;justify-self:auto;max-width:none}
+  table.cards td:not(:first-child):is([data-label="Descrição"],[data-label="Item"],[data-label="Serviço"],[data-label="Material"],[data-label="Observação"],[data-label="Endereço"],[data-label="Fornecedor"],[data-label="Histórico"])>br{display:none}
+}
+/* ===== Premium UI · Fase 7: estoque, materiais e compras ===== */
+/* Comparativo de cotação: tabela larga mantém a estrutura, com rolagem interna e 1ª coluna fixa */
+.tw:has(table.cot){overflow-x:auto}
+table.cot th:first-child,table.cot td:first-child{position:sticky;left:0;z-index:1;background:var(--card);box-shadow:inset -1px 0 0 var(--line)}
+table.cot th:first-child{background:var(--soft)}
+.catlist label{transition:border-color .12s}
+.catlist label:hover{border-color:var(--pri)}
+@media (max-width:860px){
+  /* Botões pequenos dentro dos cartões (Entrada, Saída, Paguei...): toque confortável */
+  table.cards td .btn.sm{min-height:36px;padding:6px 12px}
 }
 </style>
 </head>

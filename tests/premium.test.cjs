@@ -62,3 +62,9 @@ test('Fase 6: cartões no celular com informações empilhadas, sem vãos e text
   assert.ok(R.some(r=>r.sel==='table.cards td::before'&&/grid-row:1\/span 3/.test(r.dec)));
   assert.ok(R.some(r=>r.sel.includes('[data-label="Descrição"]')&&r.sel.endsWith('>*')&&/justify-self:auto/.test(r.dec)),'Chrome aplica justify-self também em bloco');
 });
+
+test('Fase 7: 1ª coluna continua título do cartão; cotação com 1ª coluna fixa; toque nos botões',()=>{
+  assert.ok(R.filter(r=>r.sel.includes('[data-label="Descrição"]')).every(r=>r.sel.includes('td:not(:first-child):is(')),'a 1ª coluna (ex.: Material) não pode receber o rótulo de texto longo');
+  assert.match(decl('table.cot td:first-child'),/position:sticky;left:0/);
+  assert.ok(R.some(r=>r.sel==='table.cards td .btn.sm'&&/min-height:36px/.test(r.dec)));
+});
