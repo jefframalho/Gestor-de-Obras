@@ -14,6 +14,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="Gestor de Obras — sistema de gestão para construtoras: obras, cronograma, diário de obra, financeiro, materiais, equipe e clientes.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://www.gstatic.com">
 <link rel="preconnect" href="https://firestore.googleapis.com">
@@ -461,6 +462,14 @@ td b{font-weight:600}
   .authBox .tabs{margin-left:0;margin-right:0;padding:0}
   .authR{padding:28px 20px 40px}
 }
+/* ===== Premium UI · Fase 14: desempenho e acabamento ===== */
+/* Quem pediu ao sistema para reduzir movimento não vê animações nem transições */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+/* Toque no celular sem o atraso nem o realce cinza do navegador */
+button,a,[data-act],tbody tr[data-col]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+tbody tr[data-col]:active{background:var(--soft)}
 </style>
 </head>
 <body>
