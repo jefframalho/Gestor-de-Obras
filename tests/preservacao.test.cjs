@@ -12,7 +12,10 @@ const ler=f=>JSON.parse(readFileSync('tests/fixtures/'+f,'utf8'));
 
 // Funções de interface alteradas de propósito na modernização, com o motivo.
 // Qualquer outra diferença em relação à main (2266514) faz o teste falhar.
-const ALTERADAS_DE_PROPOSITO={};
+const ALTERADAS_DE_PROPOSITO={
+  'const IC':'Fase 2: novo ícone "mais" (três pontos) no mesmo traço dos demais',
+  'function montarApp':'Fase 2: botão "Mais" do menu inferior usa o ícone próprio (antes repetia o do Painel)',
+};
 
 test('lógica idêntica à produção (exceto interface listada)',()=>{
   const base=ler('logica-base.json').blocos, atual=digitais(html);

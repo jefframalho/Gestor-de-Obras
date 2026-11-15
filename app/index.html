@@ -277,6 +277,29 @@ td.r,.r{white-space:nowrap}
 .btn{transition:background-color .12s,border-color .12s,color .12s}
 .btn[disabled],.btn:disabled{opacity:.55;cursor:not-allowed}
 @media (prefers-reduced-motion:reduce){.btn,.obra{transition:none}}
+/* ===== Premium UI · Fase 2: menu lateral e navegação ===== */
+.nav{gap:2px;padding:var(--sp-2) var(--sp-3)}
+.nav button{min-height:40px;transition:background-color .12s,color .12s}
+.nav button svg{opacity:.8}
+.nav button:hover svg,.nav button.on svg{opacity:1}
+.nav button.on{font-weight:600}
+.nav button:focus-visible{outline:2px solid var(--pri);outline-offset:-2px}
+.brand{letter-spacing:-.01em}
+.sidefoot{display:grid;gap:2px}
+.sidefoot button{transition:border-color .12s,color .12s}
+.sidefoot button:hover{border-color:var(--sideInk);color:var(--card)}
+.sidefoot button:focus-visible,.side .msair:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+/* Menu inferior (celular): toque confortável, item atual com indicador na cor da marca */
+.bnav button{min-height:52px;position:relative;border-radius:var(--r-md)}
+.bnav button.on::before{content:"";position:absolute;top:-6px;left:28%;right:28%;height:3px;border-radius:0 0 3px 3px;background:var(--pri)}
+.bnav button:focus-visible{outline:2px solid var(--pri);outline-offset:-2px}
+.mais button{min-height:76px;transition:border-color .12s,background-color .12s}
+.mais button:hover{border-color:var(--pri)}
+.mais button:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+@media (max-width:860px){
+  .side .msair{min-height:40px}
+  .tabs button{min-height:44px}
+}
 </style>
 </head>
 <body>
@@ -322,6 +345,7 @@ const soDig = s => String(s || '').replace(/\D/g, '');
 const wa = (tel, txt) => { let t = soDig(tel); if (t && t.length <= 11) t = '55' + t; return `https://wa.me/${t}?text=${encodeURIComponent(txt || '')}`; };
 function toast(m) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
 const IC = {
+  mais:'<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
   dash:'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
   obra:'<path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/>',
   fin:'<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
@@ -733,7 +757,7 @@ function montarApp() {
   const disp = [...PAGES.filter(p => pode(p[0])), ...(isAdmin() ? [['admin','Assinantes','adm']] : [])];
   const pref = ['dashboard','obras','financeiro','orcamentos','materiais','equipe','admin'];
   const prin = pref.map(k => disp.find(p => p[0] === k)).filter(Boolean).slice(0, 4);
-  const bnav = prin.map(p => `<button data-act="nav" data-a="${p[0]}">${ico(p[2])}<span>${p[1]}</span></button>`).join('') + `<button data-act="maisMenu" data-a="__mais">${ico('dash')}<span>Mais</span></button>`;
+  const bnav = prin.map(p => `<button data-act="nav" data-a="${p[0]}">${ico(p[2])}<span>${p[1]}</span></button>`).join('') + `<button data-act="maisMenu" data-a="__mais">${ico('mais')}<span>Mais</span></button>`;
   BNAV_PRIN = prin.map(p => p[0]); MAIS_LIST = disp;
   $('#root').innerHTML = `<div class="app"><aside class="side"><div class="brand"><div class="logo">${ico('logo')}</div><div>Gestor de Obras<small>${esc(S.empresa ? S.empresa.nome : 'Administração')}</small></div><button class="msair" data-act="sair">Sair</button></div>
     <nav class="nav">${navs}</nav><div class="sidefoot">${btnInstalar('binst-side')}<b>${esc(S.perfil ? S.perfil.nome : S.email)}</b>${esc(S.perfil ? PAPEIS[S.perfil.papel] : 'Administrador do sistema')}<button data-act="sair">Sair</button></div></aside>

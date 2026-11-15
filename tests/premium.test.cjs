@@ -22,3 +22,14 @@ test('Fase 1: números tabulares, valores sem quebra e foco visível na cor da m
   assert.match(decl('.kpi b'),/tabular-nums/);
   assert.match(decl(':focus-visible'),/outline:2px solid var\(--pri\)/);
 });
+
+test('Fase 2: "Mais" com ícone próprio; menu com foco visível e toque confortável',()=>{
+  assert.match(html,/data-act="maisMenu" data-a="__mais">\$\{ico\('mais'\)\}/);
+  assert.match(html,/const IC = \{\n  mais:'<circle/);
+  assert.match(decl('.nav button:focus-visible'),/outline:2px solid var\(--pri\)/);
+  assert.match(decl('.bnav button'),/min-height:52px/);
+});
+test('Fase 2: permissões do menu continuam decididas pela mesma lógica',()=>{
+  assert.match(html,/const navs = PAGES\.filter\(p => pode\(p\[0\]\)\)/);
+  assert.match(html,/\(isAdmin\(\) \? `<button data-act="nav" data-a="admin">/);
+});
