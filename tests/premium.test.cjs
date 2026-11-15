@@ -73,3 +73,9 @@ test('Fase 8: listas de seleção da equipe com toque de 44px no celular',()=>{
   assert.ok(R.some(r=>r.sel==='.checks label,.chk'&&/min-height:44px/.test(r.dec)));
   assert.match(decl('.rpes:hover'),/border-color:var\(--pri\)/);
 });
+
+test('Fase 9: campos com 16px no celular (sem zoom do iPhone), altura confortável e desabilitado visível',()=>{
+  assert.ok(R.some(r=>r.sel.startsWith('.fld input:not([type=checkbox]),.fld select,.fld textarea,.sel')&&/font-size:16px/.test(r.dec)));
+  assert.match(decl('.fld input:disabled'),/cursor:not-allowed/);
+  assert.ok(R.some(r=>r.sel==='.mact .btn'&&/min-height:44px/.test(r.dec)));
+});

@@ -393,6 +393,18 @@ table.cot th:first-child{background:var(--soft)}
   .rpes{min-height:44px}
   .dgrid2 label{min-height:44px}
 }
+/* ===== Premium UI · Fase 9: formulários ===== */
+.fld input:not([type=checkbox]),.fld select,.fld textarea{min-height:40px;transition:border-color .12s}
+.fld input:not([type=checkbox]):hover:not(:focus):not(:disabled),.fld select:hover:not(:focus):not(:disabled),.fld textarea:hover:not(:focus):not(:disabled){border-color:var(--mut)}
+.fld input:disabled,.fld select:disabled,.fld textarea:disabled,.fld input[readonly]{opacity:.7;cursor:not-allowed}
+.fld input::placeholder,.fld textarea::placeholder{color:var(--mut);opacity:.8}
+.mact{flex-wrap:wrap}
+@media (max-width:860px){
+  /* 16px nos campos evita o zoom automático do iPhone ao tocar */
+  .fld input:not([type=checkbox]),.fld select,.fld textarea,.sel,.endb input,.endb select,.rrow input,.rrow select,.vit input,table.itens input,table.itens select,table.cot input,.dgrid2 input{font-size:16px}
+  .fld input:not([type=checkbox]),.fld select,.sel{min-height:44px}
+  .mact .btn{flex:1 1 auto;justify-content:center;min-height:44px}
+}
 </style>
 </head>
 <body>
