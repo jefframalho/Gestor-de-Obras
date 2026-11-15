@@ -39,3 +39,8 @@ test('Fase 3: cartões do painel não se esticam; indicadores com altura uniform
   assert.match(decl('.grid2>div:not(.card)'),/display:grid/);
   assert.match(decl('.kpi'),/min-height:104px/);
 });
+
+test('Fase 4: abas da obra numa linha com rolagem no celular; cartões de obra com hover/foco',()=>{
+  assert.ok(R.some(r=>r.sel==='.tabs'&&/flex-wrap:nowrap/.test(r.dec)&&/overflow-x:auto/.test(r.dec)));
+  assert.match(decl('.obra:hover'),/border-color:var\(--pri\)/);
+});

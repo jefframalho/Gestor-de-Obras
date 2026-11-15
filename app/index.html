@@ -321,6 +321,24 @@ td.r,.r{white-space:nowrap}
   .kpi{min-height:0}
   .kpi span{min-height:0}
 }
+/* ===== Premium UI · Fase 4: gestão de obras ===== */
+.obra{transition:transform .12s,border-color .12s}
+.obra:hover{border-color:var(--pri)}
+.obra:focus-within{border-color:var(--pri)}
+.obra h4{letter-spacing:-.01em}
+.obra .nums{gap:12px}
+.obra .nums>div{min-width:0}
+.top .row{justify-content:flex-end}
+.tabs{scrollbar-width:thin}
+.tabs button{transition:color .12s,border-color .12s}
+.tabs button:hover{color:var(--ink)}
+@media (max-width:860px){
+  /* Abas numa linha só, com rolagem lateral (antes quebravam em duas linhas) */
+  .tabs{flex-wrap:nowrap;gap:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-left:-16px;margin-right:-16px;padding:0 16px}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button{flex:none}
+  .top{align-items:flex-start}
+}
 </style>
 </head>
 <body>
