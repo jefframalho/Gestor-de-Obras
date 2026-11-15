@@ -56,3 +56,9 @@ test('regressão: rodapé do menu só vira grade no computador (no celular conti
 test('regressão: indicadores em duas colunas no celular',()=>{
   assert.match(premium,/@media \(max-width:860px\)\{\.kpis\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}\}/);
 });
+
+test('Fase 6: cartões no celular com informações empilhadas, sem vãos e textos longos em largura total',()=>{
+  assert.ok(R.some(r=>r.sel==='table.cards td'&&/display:grid/.test(r.dec)&&/row-gap:2px/.test(r.dec)),'grade com espaço vertical pequeno (a regra original tem gap:12px)');
+  assert.ok(R.some(r=>r.sel==='table.cards td::before'&&/grid-row:1\/span 3/.test(r.dec)));
+  assert.ok(R.some(r=>r.sel.includes('[data-label="Descrição"]')&&r.sel.endsWith('>*')&&/justify-self:auto/.test(r.dec)),'Chrome aplica justify-self também em bloco');
+});
