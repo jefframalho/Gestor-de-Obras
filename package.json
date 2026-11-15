@@ -3,6 +3,7 @@
   "private": true,
   "description": "Testes locais da interface do Gestor de Obras (sem dependências; não acessam o Firebase)",
   "scripts": {
-    "test": "node --test \"tests/*.test.cjs\""
+    "test": "node --test \"tests/*.test.cjs\"",
+    "test:navegador": "node tests/navegador/fumaca.mjs"
   }
 }
