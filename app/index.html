@@ -443,6 +443,15 @@ td b{font-weight:600}
   th{font-size:10px}
   a{color:inherit;text-decoration:none}
 }
+/* ===== Premium UI · Fase 12: celular ===== */
+@media (max-width:860px){
+  /* Aviso flutuante acima da barra inferior (antes cobria os botões de navegação) */
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom));max-width:calc(100% - 32px);text-align:center}
+  /* Janelas de formulário aproveitam melhor a tela pequena */
+  .ov{padding:16px 10px 96px}
+  .modal{padding:18px 16px}
+  .main{overflow-x:clip}
+}
 </style>
 </head>
 <body>

@@ -101,3 +101,7 @@ test('Fase 11: impressão usa só valores claros originais, esconde controles e 
   assert.match(decl('.bnav'),/display:none!important/);
   assert.match(decl('table.cards td'),/display:table-cell!important/);
 });
+
+test('Fase 12: no celular o aviso flutuante fica acima da barra inferior',()=>{
+  assert.match(decl('.toast'),/bottom:calc\(84px \+ env\(safe-area-inset-bottom\)\)/);
+});
