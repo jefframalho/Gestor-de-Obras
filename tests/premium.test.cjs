@@ -33,3 +33,9 @@ test('Fase 2: permissões do menu continuam decididas pela mesma lógica',()=>{
   assert.match(html,/const navs = PAGES\.filter\(p => pode\(p\[0\]\)\)/);
   assert.match(html,/\(isAdmin\(\) \? `<button data-act="nav" data-a="admin">/);
 });
+
+test('Fase 3: cartões do painel não se esticam; indicadores com altura uniforme',()=>{
+  assert.match(decl('.grid2'),/align-items:start/);
+  assert.match(decl('.grid2>div:not(.card)'),/display:grid/);
+  assert.match(decl('.kpi'),/min-height:104px/);
+});

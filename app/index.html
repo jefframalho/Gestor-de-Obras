@@ -300,6 +300,27 @@ td.r,.r{white-space:nowrap}
   .side .msair{min-height:40px}
   .tabs button{min-height:44px}
 }
+/* ===== Premium UI · Fase 3: painel executivo ===== */
+/* Cartões em duas colunas não se esticam até a altura da coluna vizinha */
+.grid2{align-items:start}
+.grid2>div:not(.card){display:grid;gap:16px;align-content:start}
+.grid2>div:not(.card)>.card{margin:0!important}
+.kpis{gap:12px}
+.kpi{display:flex;flex-direction:column;min-height:104px}
+.kpi span{min-height:2.7em}
+.kpi small{margin-top:auto;padding-top:4px;line-height:1.35}
+/* Listas do painel: linhas compactas e alinhadas */
+.list .it{padding:10px 0}
+.list .it>div:first-child{min-width:0}
+.list .it b{font-weight:600}
+.list .it .r b,.list .it>div:last-child b{font-variant-numeric:tabular-nums}
+/* Estados vazio e carregando */
+.vazio{padding:28px 20px;border-radius:var(--r-lg)}
+.boot{gap:4px}
+@media (max-width:860px){
+  .kpi{min-height:0}
+  .kpi span{min-height:0}
+}
 </style>
 </head>
 <body>
