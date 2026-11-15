@@ -105,3 +105,7 @@ test('Fase 11: impressão usa só valores claros originais, esconde controles e 
 test('Fase 12: no celular o aviso flutuante fica acima da barra inferior',()=>{
   assert.match(decl('.toast'),/bottom:calc\(84px \+ env\(safe-area-inset-bottom\)\)/);
 });
+
+test('Fase 13: abas do login alinhadas ao formulário no celular',()=>{
+  assert.match(decl('.authBox .tabs'),/margin-left:0;margin-right:0;padding:0/);
+});
