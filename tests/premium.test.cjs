@@ -11,7 +11,8 @@ const decl=sel=>R.filter(r=>r.sel.split(',').map(x=>x.trim()).includes(sel)).map
 
 test('camada Premium não introduz nenhuma cor nova (só variáveis originais)',()=>{
   assert.ok(premium.length>100,'camada Premium presente');
-  const sem=premium.replace(/\/\*[\s\S]*?\*\//g,'');
+  // Única exceção: na impressão, o trecho delimitado reaplica a paleta clara ORIGINAL (conferida no teste da Fase 11)
+  const sem=premium.replace(/paleta-clara-original:inicio[\s\S]*?paleta-clara-original:fim/,'').replace(/\/\*[\s\S]*?\*\//g,'');
   assert.doesNotMatch(sem,/#[0-9a-fA-F]{3,8}\b/,'cor hexadecimal fixa');
   assert.doesNotMatch(sem,/rgba?\(\s*\d/,'cor rgb fixa');
 });
@@ -84,4 +85,19 @@ test('Fase 10: linhas que abrem registro são focáveis e Enter/Espaço disparam
   assert.match(html,/document\.querySelectorAll\("tbody tr\[data-col\]\[data-id\]:not\(\[tabindex\]\)"\)\.forEach\(tr => \{ tr\.tabIndex = 0; \}\)/);
   assert.match(html,/if \(\(e\.key === "Enter" \|\| e\.key === " "\) && e\.target\?\.matches\?\.\("tbody tr\[data-col\]\[data-id\]"\)\) \{ e\.preventDefault\(\); e\.target\.click\(\); \}/);
   assert.match(decl('tbody tr:focus-visible'),/outline:2px solid var\(--pri\)/);
+});
+
+test('Fase 11: impressão usa só valores claros originais, esconde controles e volta a tabela',()=>{
+  const base=require('./fixtures/cores-base.json').cores.claro;
+  const m=premium.match(/paleta-clara-original:inicio[\s\S]*?\{([^}]*)\}[\s\S]*?paleta-clara-original:fim/);
+  assert.ok(m,'trecho da paleta de impressão presente');
+  const cvOrig=Object.fromEntries([...css.match(/:root\{(--cv-grid[^}]*)\}/)[1].matchAll(/--([\w-]+):([^;]+)/g)].map(x=>[x[1],x[2].trim()]));
+  let n=0;
+  for(const [,k,v] of m[1].matchAll(/--([\w-]+):([^;]+)/g)){
+    const esperado=k.startsWith('cv-')?cvOrig[k]:base[k];
+    assert.equal(v.trim(),esperado,'--'+k+' deve ser o valor claro original'); n++;
+  }
+  assert.ok(n>=10,'paleta de impressão completa');
+  assert.match(decl('.bnav'),/display:none!important/);
+  assert.match(decl('table.cards td'),/display:table-cell!important/);
 });
