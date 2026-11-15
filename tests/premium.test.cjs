@@ -79,3 +79,9 @@ test('Fase 9: campos com 16px no celular (sem zoom do iPhone), altura confortáv
   assert.match(decl('.fld input:disabled'),/cursor:not-allowed/);
   assert.ok(R.some(r=>r.sel==='.mact .btn'&&/min-height:44px/.test(r.dec)));
 });
+
+test('Fase 10: linhas que abrem registro são focáveis e Enter/Espaço disparam o mesmo clique',()=>{
+  assert.match(html,/document\.querySelectorAll\("tbody tr\[data-col\]\[data-id\]:not\(\[tabindex\]\)"\)\.forEach\(tr => \{ tr\.tabIndex = 0; \}\)/);
+  assert.match(html,/if \(\(e\.key === "Enter" \|\| e\.key === " "\) && e\.target\?\.matches\?\.\("tbody tr\[data-col\]\[data-id\]"\)\) \{ e\.preventDefault\(\); e\.target\.click\(\); \}/);
+  assert.match(decl('tbody tr:focus-visible'),/outline:2px solid var\(--pri\)/);
+});

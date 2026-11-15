@@ -405,6 +405,16 @@ table.cot th:first-child{background:var(--soft)}
   .fld input:not([type=checkbox]),.fld select,.sel{min-height:44px}
   .mact .btn{flex:1 1 auto;justify-content:center;min-height:44px}
 }
+/* ===== Premium UI · Fase 10: tabelas ===== */
+td{padding:9px 12px}
+th{padding:9px 12px}
+tbody tr{transition:background-color .1s}
+tbody tr:focus-visible{outline:2px solid var(--pri);outline-offset:-2px;background:var(--soft)}
+td b{font-weight:600}
+.tw{scrollbar-width:thin}
+@media (max-width:860px){
+  table.cards tbody tr:focus-visible{outline-offset:2px}
+}
 </style>
 </head>
 <body>
@@ -2901,6 +2911,17 @@ async function instalarApp() {
     ? `<ol class="passos-inst"><li>Toque no botão <b>Compartilhar</b> <span class="kbd">⬆︎</span> na barra do Safari.</li><li>Role e toque em <b>Adicionar à Tela de Início</b>.</li><li>Toque em <b>Adicionar</b>. Pronto: o ícone <b>Gestor Obras</b> aparece na sua tela.</li></ol><p style="color:var(--mut);font-size:12.5px">No iPhone, abra este site pelo <b>Safari</b> para instalar.</p>`
     : `<ol class="passos-inst"><li>Toque no menu <span class="kbd">⋮</span> do navegador (canto de cima).</li><li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li><li>Confirme. O ícone <b>Gestor Obras</b> aparece na sua tela.</li></ol><p style="color:var(--mut);font-size:12.5px">Use o <b>Chrome</b> (Android) ou o <b>Chrome/Edge</b> (computador).</p>`;
   modal(`<h3>📲 Instalar o Gestor de Obras</h3><p style="margin-top:0">Fica com ícone na tela inicial e abre em tela cheia, como um aplicativo. As atualizações chegam sozinhas.</p>${passo}<div class="mact"><span style="flex:1"></span><button class="btn pri" onclick="fecharModal()">Entendi</button></div>`);
+}
+/* ---------- Tabelas: acesso por teclado (só apresentação) ----------
+   Linhas que abrem um registro ao clicar ficam focáveis; Enter/Espaço disparam o MESMO clique. */
+function prepararLinhas() {
+  document.querySelectorAll("tbody tr[data-col][data-id]:not([tabindex])").forEach(tr => { tr.tabIndex = 0; });
+}
+if (typeof MutationObserver !== "undefined" && typeof document !== "undefined" && document.body) {
+  new MutationObserver(prepararLinhas).observe(document.body, {childList: true, subtree: true});
+  document.addEventListener("keydown", e => {
+    if ((e.key === "Enter" || e.key === " ") && e.target?.matches?.("tbody tr[data-col][data-id]")) { e.preventDefault(); e.target.click(); }
+  });
 }
 (async () => {
   const q = new URLSearchParams(location.search);
