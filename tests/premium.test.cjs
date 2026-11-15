@@ -68,3 +68,8 @@ test('Fase 7: 1ª coluna continua título do cartão; cotação com 1ª coluna f
   assert.match(decl('table.cot td:first-child'),/position:sticky;left:0/);
   assert.ok(R.some(r=>r.sel==='table.cards td .btn.sm'&&/min-height:36px/.test(r.dec)));
 });
+
+test('Fase 8: listas de seleção da equipe com toque de 44px no celular',()=>{
+  assert.ok(R.some(r=>r.sel==='.checks label,.chk'&&/min-height:44px/.test(r.dec)));
+  assert.match(decl('.rpes:hover'),/border-color:var\(--pri\)/);
+});

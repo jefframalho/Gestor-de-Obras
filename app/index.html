@@ -380,6 +380,19 @@ table.cot th:first-child{background:var(--soft)}
   /* Botões pequenos dentro dos cartões (Entrada, Saída, Paguei...): toque confortável */
   table.cards td .btn.sm{min-height:36px;padding:6px 12px}
 }
+/* ===== Premium UI · Fase 8: funcionários, equipes e operação ===== */
+/* Listas de seleção (diárias do dia, equipe presente, permissões): linha inteira clicável e toque confortável */
+.checks label{cursor:pointer;min-height:36px}
+.checks label:hover{color:var(--pri2)}
+.rpes{transition:border-color .12s}
+.rpes:hover{border-color:var(--pri)}
+.opc{transition:border-color .12s,background-color .12s}
+.opc:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+@media (max-width:860px){
+  .checks label,.chk{min-height:44px}
+  .rpes{min-height:44px}
+  .dgrid2 label{min-height:44px}
+}
 </style>
 </head>
 <body>
