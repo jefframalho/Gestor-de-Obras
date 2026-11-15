@@ -255,6 +255,28 @@ table.itens tbody tr{cursor:default}table.itens tbody tr:hover{background:none}
   .gname{width:90px}.gfoot{padding-left:100px}
   .dia img{width:84px;height:70px}
 }
+/* ===== Premium UI · Fase 1: tipografia, espaçamento e bordas (cores originais preservadas) ===== */
+:root{
+  --fs-xs:11.5px;--fs-sm:12.5px;--fs-md:14px;--fs-lg:15.5px;--fs-xl:18px;--fs-2xl:22px;
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;
+  --r-sm:7px;--r-md:9px;--r-lg:12px;
+}
+html,body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+h1,h2,h3,h4,h5{letter-spacing:-.01em}
+.top h1{font-weight:700;line-height:1.2}
+.card h3{font-size:var(--fs-lg);letter-spacing:-.01em}
+/* Números alinhados em coluna e valores que não quebram no meio (ex.: "-R$ 16.850,00") */
+.kpi b,.r,td.r,.totbox b,.obra .nums b,.pct b,.big,.gfoot{font-variant-numeric:tabular-nums}
+.kpi b{white-space:nowrap;font-size:clamp(18px,1.1vw + 7px,22px)}
+td.r,.r{white-space:nowrap}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.kpi span{display:block;line-height:1.35}
+/* Foco visível e consistente (teclado), na cor principal da marca */
+:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+.btn:focus-visible,.sel:focus-visible,.tabs button:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+.btn{transition:background-color .12s,border-color .12s,color .12s}
+.btn[disabled],.btn:disabled{opacity:.55;cursor:not-allowed}
+@media (prefers-reduced-motion:reduce){.btn,.obra{transition:none}}
 </style>
 </head>
 <body>
